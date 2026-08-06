@@ -1,0 +1,208 @@
+<header class="cabecera">
+  <div class="cabecera-contenido">
+    <div class="marca">
+      <span class="logo">⚡</span>
+      <div>
+        <h1>EnergiAI</h1>
+        <p>Descubre tu perfil de consumo eléctrico y cómo ahorrar</p>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="pagina">
+  <!-- KPIs del dashboard -->
+  <div class="kpis">
+    <div class="kpi">
+      <span class="kpi-icono">📈</span>
+      <div>
+        <span class="kpi-valor">{{ totalAnalisis() }}</span>
+        <span class="kpi-etiqueta">Análisis realizados</span>
+      </div>
+    </div>
+    <div class="kpi">
+      <span class="kpi-icono">💵</span>
+      <div>
+        <span class="kpi-valor">${{ costoPromedio() }}</span>
+        <span class="kpi-etiqueta">Costo promedio mensual</span>
+      </div>
+    </div>
+    <div class="kpi">
+      <span class="kpi-icono">🔌</span>
+      <div>
+        <span class="kpi-valor">{{ consumoPromedio() }} kWh</span>
+        <span class="kpi-etiqueta">Consumo promedio</span>
+      </div>
+    </div>
+    <div class="kpi" [ngClass]="claseCategoria(categoriaMasFrecuente())">
+      <span class="kpi-icono">{{ iconoCategoria(categoriaMasFrecuente()) || '—' }}</span>
+      <div>
+        <span class="kpi-valor">{{ categoriaMasFrecuente() }}</span>
+        <span class="kpi-etiqueta">Perfil más frecuente</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="layout">
+    <!-- Formulario -->
+    <div class="tarjeta formulario">
+      <h2>Nuevo análisis</h2>
+
+      <div class="seccion">
+        <h3 class="seccion-titulo">Consumo eléctrico</h3>
+
+        <label>
+          ¿Cuántos kWh consumiste este mes?
+          <input type="number" [(ngModel)]="consumoKwh" placeholder="Ej: 180" min="0" />
+        </label>
+
+        <label>
+          ¿Cuántos kWh usas en horario pico?
+          <input type="number" [(ngModel)]="usoHorarioPicoKwh" placeholder="Ej: 32" min="0" />
+          <small>El horario pico suele ser por la tarde-noche, cuando la red está más saturada.</small>
+        </label>
+      </div>
+
+      <div class="seccion">
+        <h3 class="seccion-titulo">Vivienda</h3>
+
+        <label>
+          ¿Cuántas personas viven en el hogar?
+          <input type="number" [(ngModel)]="tamanoHogar" placeholder="Ej: 4" min="1" max="30" />
+        </label>
+
+        <label>
+          Temperatura promedio de la zona (°C)
+          <input type="number" [(ngModel)]="temperaturaPromedio" placeholder="Ej: 18" min="-30" max="55" />
+        </label>
+
+        <label>
+          ¿Tienes aire acondicionado?
+          <div class="chips">
+            <button
+              type="button"
+              class="chip"
+              [class.activo]="tieneAireAcondicionado === true"
+              (click)="tieneAireAcondicionado = true"
+            >
+              Sí
+            </button>
+            <button
+              type="button"
+              class="chip"
+              [class.activo]="tieneAireAcondicionado === false"
+              (click)="tieneAireAcondicionado = false"
+            >
+              No
+            </button>
+          </div>
+        </label>
+      </div>
+
+      <button class="btn-analizar" (click)="analizar()" [disabled]="cargando()">
+        <span class="spinner" *ngIf="cargando()"></span>
+        {{ cargando() ? 'Analizando...' : 'Analizar mi consumo' }}
+      </button>
+
+      <p class="error" *ngIf="error()">⚠️ {{ error() }}</p>
+    </div>
+
+    <!-- Panel de resultado -->
+    <div class="panel-resultado">
+      <div
+        class="tarjeta resultado"
+        *ngIf="resultado() as resultado; else vacio"
+        [ngClass]="claseCategoria(resultado.categoria)"
+      >
+        <span class="etiqueta">Tu perfil de consumo</span>
+
+        <div class="anillo" [style.--pct.%]="porcentajeProbabilidad()">
+          <div class="anillo-centro">
+            <span class="anillo-icono">{{ iconoCategoria(resultado.categoria) }}</span>
+            <span class="anillo-pct">{{ porcentajeProbabilidad() }}%</span>
+          </div>
+        </div>
+
+        <h2 class="categoria">{{ resultado.categoria }}</h2>
+
+        <div class="costo">
+          <span>Costo estimado mensual</span>
+          <strong>${{ resultado.costo_estimado_mensual }}</strong>
+        </div>
+
+        <div class="recomendaciones">
+          <p class="rec-titulo">Recomendaciones</p>
+          <ul>
+            <li *ngFor="let rec of resultado.recomendaciones">
+              <span class="rec-check">✓</span>{{ rec }}
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <ng-template #vacio>
+        <div class="tarjeta estado-vacio" *ngIf="!cargando()">
+          <div class="estado-vacio-icono">📊</div>
+          <p class="estado-vacio-titulo">Aquí verás tu resultado</p>
+          <p class="estado-vacio-texto">
+            Completa el formulario y presiona "Analizar mi consumo" para conocer
+            tu perfil energético, tu costo estimado y recomendaciones para ahorrar.
+          </p>
+        </div>
+        <div class="tarjeta estado-vacio" *ngIf="cargando()">
+          <div class="estado-vacio-icono girando">⚡</div>
+          <p class="estado-vacio-titulo">Analizando tu consumo...</p>
+        </div>
+      </ng-template>
+    </div>
+  </div>
+
+  <!-- Historial / seguimiento -->
+  <div class="tarjeta historial" *ngIf="totalAnalisis() > 0">
+    <div class="historial-cabecera">
+      <h2>Historial de análisis</h2>
+      <button type="button" class="btn-limpiar" (click)="limpiarHistorial()">Borrar historial</button>
+    </div>
+
+    <div class="grafico">
+      <div class="grafico-barra" *ngFor="let barra of barrasHistorial()">
+        <div
+          class="barra"
+          [ngClass]="claseCategoria(barra.item.categoria)"
+          [style.height.%]="barra.alturaPct"
+          [title]="'$' + barra.item.costo_estimado_mensual"
+        ></div>
+        <span class="grafico-etiqueta">${{ barra.item.costo_estimado_mensual }}</span>
+      </div>
+    </div>
+
+    <ul class="lista-historial">
+      <li *ngFor="let item of historial()">
+        <span class="historial-icono" [ngClass]="claseCategoria(item.categoria)">
+          {{ iconoCategoria(item.categoria) }}
+        </span>
+        <span class="historial-categoria">{{ item.categoria }}</span>
+        <span class="historial-detalle">{{ item.consumo_kwh }} kWh</span>
+        <span class="historial-costo">${{ item.costo_estimado_mensual }}</span>
+        <span class="historial-fecha">{{ formatearFecha(item.fecha) }}</span>
+      </li>
+    </ul>
+  </div>
+
+  <footer class="pie">
+    <div class="pie-marca">
+      <span class="logo">⚡</span>
+      <span>EnergiAI</span>
+    </div>
+
+    <div class="pie-stack">
+      <span class="pie-chip">Angular</span>
+      <span class="pie-chip">Spring Boot</span>
+      <span class="pie-chip">OCI</span>
+    </div>
+
+    <p class="pie-texto">
+      Proyecto para el Hackathon ONE · G9 LATAM · Alura + Oracle
+    </p>
+  </footer>
+</div>
