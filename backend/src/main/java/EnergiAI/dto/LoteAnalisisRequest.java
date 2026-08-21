@@ -15,7 +15,8 @@ import java.util.List;
  * {@link AnalisisRequest} ya tiene (esto es "validación en cascada": sin
  * el {@code @Valid} aquí, Spring solo revisaría que la lista no sea nula,
  * no el contenido de cada fila).
- */
+* 
+*/
 public class LoteAnalisisRequest {
 
     /** Una petición de análisis por fila del CSV/Excel subido (no puede venir vacía). */

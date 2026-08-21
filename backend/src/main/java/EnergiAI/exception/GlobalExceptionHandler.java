@@ -34,6 +34,7 @@ import java.util.Map;
  * {@link #handleGeneral}, aunque técnicamente también sea una
  * {@code Exception}).
  */
+
 @ControllerAdvice
 public class GlobalExceptionHandler {
 
