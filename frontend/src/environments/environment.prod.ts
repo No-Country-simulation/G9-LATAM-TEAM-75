@@ -5,6 +5,6 @@
  */
 export const environment = {
   production: true,
-  /** URL base del backend en producción — completar cuando esté desplegado. */
-  apiUrl: '', // TODO: URL del backend en producción
+  /** URL base del backend en producción (desplegado en Railway). */
+  apiUrl: 'https://g9-latam-team-75-production.up.railway.app',
 };
