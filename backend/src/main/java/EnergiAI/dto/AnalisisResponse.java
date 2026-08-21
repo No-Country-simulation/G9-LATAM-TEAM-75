@@ -45,6 +45,54 @@ public class AnalisisResponse {
     @JsonProperty("consumo_kwh")
     private Double consumoKwh;
 
+    // ---- Datos de entrada, repetidos igual que consumoKwh de arriba ----
+    // Se echan de vuelta tal cual llegaron en el AnalisisRequest (mismos
+    // nombres de JSON) para que el historial de la sesión tenga todo lo
+    // que se necesita para, por ejemplo, exportarlo a Excel y volver a
+    // subirlo como un lote nuevo sin tener que re-teclear nada.
+
+    @JsonProperty("uso_horario_pico_kwh")
+    private Double usoHorarioPicoKwh;
+
+    @JsonProperty("tamano_hogar")
+    private Integer tamanoHogar;
+
+    @JsonProperty("temperatura_promedio")
+    private Double temperaturaPromedio;
+
+    @JsonProperty("refrigeradores")
+    private Integer cantidadRefrigeradores;
+
+    @JsonProperty("microondas")
+    private Integer cantidadMicroondas;
+
+    @JsonProperty("lavadoras")
+    private Integer cantidadLavadoras;
+
+    @JsonProperty("pantallas")
+    private Integer cantidadPantallas;
+
+    @JsonProperty("aire_acondicionado")
+    private Integer cantidadAireAcondicionado;
+
+    @JsonProperty("focos")
+    private Integer cantidadFocos;
+
+    /**
+     * Mes al que corresponde este recibo (ej. "Enero"), repetido tal cual
+     * llegó en el {@link AnalisisRequest} — puede ser null si no se mandó
+     * (análisis hecho a mano en el formulario, sin pasar por un lote).
+     */
+    @JsonProperty("mes")
+    private String mes;
+
+    /**
+     * Año al que corresponde este recibo, repetido tal cual llegó en el
+     * {@link AnalisisRequest} — puede ser null si no se mandó.
+     */
+    @JsonProperty("anio")
+    private Integer anio;
+
     /**
      * Clasificación del perfil energético: {@code "Eficiente"},
      * {@code "Moderado"} o {@code "Ineficiente"}. Viene del modelo de Data
@@ -136,5 +184,115 @@ public class AnalisisResponse {
     /** @param costoEstimadoMensual el costo mensual estimado */
     public void setCostoEstimadoMensual(Double costoEstimadoMensual) {
         this.costoEstimadoMensual = costoEstimadoMensual;
+    }
+
+    /** @return el consumo mensual en horario pico analizado, en kWh */
+    public Double getUsoHorarioPicoKwh() {
+        return usoHorarioPicoKwh;
+    }
+
+    /** @param usoHorarioPicoKwh el consumo mensual en horario pico analizado, en kWh */
+    public void setUsoHorarioPicoKwh(Double usoHorarioPicoKwh) {
+        this.usoHorarioPicoKwh = usoHorarioPicoKwh;
+    }
+
+    /** @return la cantidad de personas en el hogar analizada */
+    public Integer getTamanoHogar() {
+        return tamanoHogar;
+    }
+
+    /** @param tamanoHogar la cantidad de personas en el hogar analizada */
+    public void setTamanoHogar(Integer tamanoHogar) {
+        this.tamanoHogar = tamanoHogar;
+    }
+
+    /** @return la temperatura promedio analizada, en °C */
+    public Double getTemperaturaPromedio() {
+        return temperaturaPromedio;
+    }
+
+    /** @param temperaturaPromedio la temperatura promedio analizada, en °C */
+    public void setTemperaturaPromedio(Double temperaturaPromedio) {
+        this.temperaturaPromedio = temperaturaPromedio;
+    }
+
+    /** @return la cantidad de refrigeradores analizada */
+    public Integer getCantidadRefrigeradores() {
+        return cantidadRefrigeradores;
+    }
+
+    /** @param cantidadRefrigeradores la cantidad de refrigeradores analizada */
+    public void setCantidadRefrigeradores(Integer cantidadRefrigeradores) {
+        this.cantidadRefrigeradores = cantidadRefrigeradores;
+    }
+
+    /** @return la cantidad de microondas analizada */
+    public Integer getCantidadMicroondas() {
+        return cantidadMicroondas;
+    }
+
+    /** @param cantidadMicroondas la cantidad de microondas analizada */
+    public void setCantidadMicroondas(Integer cantidadMicroondas) {
+        this.cantidadMicroondas = cantidadMicroondas;
+    }
+
+    /** @return la cantidad de lavadoras analizada */
+    public Integer getCantidadLavadoras() {
+        return cantidadLavadoras;
+    }
+
+    /** @param cantidadLavadoras la cantidad de lavadoras analizada */
+    public void setCantidadLavadoras(Integer cantidadLavadoras) {
+        this.cantidadLavadoras = cantidadLavadoras;
+    }
+
+    /** @return la cantidad de pantallas/televisores analizada */
+    public Integer getCantidadPantallas() {
+        return cantidadPantallas;
+    }
+
+    /** @param cantidadPantallas la cantidad de pantallas/televisores analizada */
+    public void setCantidadPantallas(Integer cantidadPantallas) {
+        this.cantidadPantallas = cantidadPantallas;
+    }
+
+    /** @return la cantidad de equipos de aire acondicionado analizada */
+    public Integer getCantidadAireAcondicionado() {
+        return cantidadAireAcondicionado;
+    }
+
+    /** @param cantidadAireAcondicionado la cantidad de equipos de aire acondicionado analizada */
+    public void setCantidadAireAcondicionado(Integer cantidadAireAcondicionado) {
+        this.cantidadAireAcondicionado = cantidadAireAcondicionado;
+    }
+
+    /** @return la cantidad de focos/lámparas analizada */
+    public Integer getCantidadFocos() {
+        return cantidadFocos;
+    }
+
+    /** @param cantidadFocos la cantidad de focos/lámparas analizada */
+    public void setCantidadFocos(Integer cantidadFocos) {
+        this.cantidadFocos = cantidadFocos;
+    }
+
+    /** @return el mes al que corresponde este recibo, o null si no se mandó */
+    public String getMes() {
+        return mes;
+    }
+
+    /** @param mes el mes al que corresponde este recibo */
+    public void setMes(String mes) {
+        this.mes = mes;
+    }
+
+    /** @return el año al que corresponde este recibo, o null si no se mandó */
+    public Integer getAnio() {
+        return anio;
+    }
+
+    /** @param anio el año al que corresponde este recibo */
+    public void setAnio(Integer anio) {
+        this.anio = anio;
     }
 }

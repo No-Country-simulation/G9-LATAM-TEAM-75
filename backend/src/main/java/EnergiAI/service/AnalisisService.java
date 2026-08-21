@@ -9,7 +9,9 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -48,6 +50,14 @@ public class AnalisisService {
      */
     private final HistorialSesion historialSesion;
 
+    /**
+     * Constructor usado por Spring para inyectar sus dos dependencias
+     * ({@code @Autowired} implícito: al haber un solo constructor, Spring
+     * no necesita la anotación explícita).
+     *
+     * @param modeloDataClient cliente hacia el microservicio de Data
+     * @param historialSesion historial de la sesión HTTP actual
+     */
     public AnalisisService(ModeloDataClient modeloDataClient, HistorialSesion historialSesion) {
         this.modeloDataClient = modeloDataClient;
         this.historialSesion = historialSesion;
@@ -64,7 +74,13 @@ public class AnalisisService {
      *       backend, nunca Data — no es una responsabilidad del modelo de
      *       clasificación).</li>
      *   <li>Arma las recomendaciones: las del modelo si las mandó, o unas
-     *       genéricas por categoría si no.</li>
+     *       personalizadas según sus propios datos si no (ver {@link
+     *       #recomendacionesPersonalizadas}).</li>
+     *   <li>Guarda el resultado en el historial de la sesión — salvo que
+     *       {@code request.isSimulacion()} sea true (ver {@link
+     *       AnalisisRequest#isSimulacion()}), usado por el simulador de
+     *       ahorro del frontend para probar escenarios sin ensuciar el
+     *       historial real.</li>
      * </ol>
      *
      * @param request datos de consumo ya validados por Bean Validation
@@ -75,6 +91,21 @@ public class AnalisisService {
         AnalisisResponse response = new AnalisisResponse();
         response.setFecha(LocalDateTime.now());
         response.setConsumoKwh(request.getConsumoKwh());
+
+        // Se repiten los demás datos de entrada tal cual llegaron, para que
+        // el historial de la sesión tenga todo lo necesario (ej. para
+        // exportarlo a Excel y poder volver a subirlo como un lote nuevo).
+        response.setUsoHorarioPicoKwh(request.getUsoHorarioPicoKwh());
+        response.setTamanoHogar(request.getTamanoHogar());
+        response.setTemperaturaPromedio(request.getTemperaturaPromedio());
+        response.setCantidadRefrigeradores(request.getCantidadRefrigeradores());
+        response.setCantidadMicroondas(request.getCantidadMicroondas());
+        response.setCantidadLavadoras(request.getCantidadLavadoras());
+        response.setCantidadPantallas(request.getCantidadPantallas());
+        response.setCantidadAireAcondicionado(request.getCantidadAireAcondicionado());
+        response.setCantidadFocos(request.getCantidadFocos());
+        response.setMes(request.getMes());
+        response.setAnio(request.getAnio());
 
         Optional<PrediccionModelo> prediccion = modeloDataClient.predecir(request);
 
@@ -104,14 +135,34 @@ public class AnalisisService {
         // el mock), se generan unas por defecto según la categoría.
         List<String> recomendaciones = prediccion.map(PrediccionModelo::getRecomendaciones).orElse(null);
         response.setRecomendaciones(
-                recomendaciones != null ? recomendaciones : recomendacionesSegunData(categoria));
+                recomendaciones != null ? recomendaciones : recomendacionesPersonalizadas(request, categoria));
 
         // Se guarda en el historial de ESTA sesión únicamente (no en una
         // base de datos compartida) para poder consultarlo después con
-        // GET /analisis-energetico.
-        historialSesion.agregar(response);
+        // GET /analisis-energetico — excepto si es una simulación ("¿y si
+        // reduzco mi consumo un 20%?"), que no debe mezclarse con los
+        // análisis reales del historial.
+        if (!request.isSimulacion()) {
+            historialSesion.agregar(response);
+        }
 
         return response;
+    }
+
+    /**
+     * Procesamiento por lotes: analiza varias peticiones de un jalón (por
+     * ejemplo, las filas de un CSV que subió el usuario), reutilizando
+     * exactamente la misma lógica de {@link #analizar} para cada una —
+     * incluye el mismo cálculo de costo, la misma clasificación (modelo
+     * real o mock), y cada resultado real (sin {@code simulacion:true})
+     * queda guardado en el historial de la sesión igual que un análisis
+     * hecho a mano en el formulario.
+     *
+     * @param requests una petición de análisis por cada fila del lote
+     * @return un resultado por cada petición, en el mismo orden que llegaron
+     */
+    public List<AnalisisResponse> analizarLote(List<AnalisisRequest> requests) {
+        return requests.stream().map(this::analizar).toList();
     }
 
     /**
@@ -188,35 +239,194 @@ public class AnalisisService {
         }
     }
 
+    // Consumo diario estimado por unidad de cada tipo de equipo, en kWh.
+    // Coeficientes usados para estimar, de los equipos que declaró el
+    // usuario, cuál es el que más pesa en su consumo. El de aire
+    // acondicionado (2.60) es el MISMO que se usó al reentrenar el
+    // modelo (antes era 9.60, heredado del dataset viejo de Data — con
+    // ese valor un solo A/C representaba más de la mitad de un consumo
+    // mensual típico, dando ahorros irrealmente grandes).
+    private static final double KWH_DIA_REFRIGERADOR = 1.20;
+    private static final double KWH_DIA_MICROONDAS = 0.24;
+    private static final double KWH_DIA_LAVADORA = 0.25;
+    private static final double KWH_DIA_PANTALLA = 0.50;
+    private static final double KWH_DIA_AIRE_ACONDICIONADO = 2.60;
+    // Antes 0.54 (heredado del dataset viejo de Data) -- con ese valor los
+    // focos superaban al refrigerador y hasta al A/C en las recomendaciones,
+    // algo poco realista. 0.12 es el mismo valor con el que se reentrenó el modelo.
+    private static final double KWH_DIA_FOCO = 0.12;
+
+    /** Días por mes usados para convertir los coeficientes KWH_DIA_* a kWh/mes en las recomendaciones. */
+    private static final int DIAS_POR_MES = 30;
+
+    /** % mínimo del consumo en equipos que debe representar un segundo equipo para también mencionarlo. */
+    private static final double UMBRAL_SEGUNDO_EQUIPO_PORCENTAJE = 20;
+
+    /** Umbral de "mucho uso en horario pico", como % del consumo total. */
+    private static final double UMBRAL_PICO_ALTO_PORCENTAJE = 25;
+
+    /** Umbral de consumo mensual por persona considerado alto, en kWh. */
+    private static final double UMBRAL_CONSUMO_POR_PERSONA_ALTO = 100;
+
     /**
-     * Recomendaciones genéricas según la categoría (basadas en los
-     * ejemplos de Data). Solo se usan cuando el microservicio de Data no
-     * mandó sus propias recomendaciones (ver {@link #analizar}).
+     * Recomendaciones personalizadas según los datos reales del usuario
+     * (no solo la categoría). Solo se usan cuando el microservicio de
+     * Data no mandó sus propias recomendaciones (ver {@link #analizar}).
      *
+     * Combina:
+     * <ol>
+     *   <li>Un mensaje de apertura según la categoría.</li>
+     *   <li>Cuál tipo de equipo (refrigeradores, aire acondicionado, etc.)
+     *       representa la mayor parte de su consumo estimado, con un
+     *       consejo específico para ese equipo.</li>
+     *   <li>Un aviso si una parte grande de su consumo ocurre en horario
+     *       pico.</li>
+     *   <li>Un aviso si su consumo por persona es alto comparado con lo
+     *       típico.</li>
+     * </ol>
+     *
+     * @param request  los mismos datos que se analizaron (para leer las
+     *                 cantidades de equipos, el horario pico, etc.)
      * @param categoria una de {@code "Eficiente"}, {@code "Moderado"} o
-     *                  {@code "Ineficiente"} (cualquier otro valor cae en
-     *                  el caso {@code default}, tratado como Ineficiente)
-     * @return una lista de 2 recomendaciones en texto plano
+     *                  {@code "Ineficiente"}
+     * @return entre 2 y 4 recomendaciones en texto plano
      */
-    private List<String> recomendacionesSegunData(String categoria) {
+    private List<String> recomendacionesPersonalizadas(AnalisisRequest request, String categoria) {
         List<String> recomendaciones = new ArrayList<>();
 
         switch (categoria) {
             case "Eficiente":
-                recomendaciones.add("Continúe con sus hábitos");
-                recomendaciones.add("Mantenga el mantenimiento de los equipos");
+                recomendaciones.add("Tu perfil es eficiente: mantén estos hábitos.");
                 break;
             case "Moderado":
-                recomendaciones.add("Reducir el consumo en horas pico");
-                recomendaciones.add("Revisar el consumo general");
+                recomendaciones.add("Estás cerca de un perfil eficiente; estos ajustes pueden ayudarte a mejorar:");
                 break;
             default: // Ineficiente
-                recomendaciones.add("Optimizar el uso de equipos");
-                recomendaciones.add("Revisar el consumo en horas pico");
+                recomendaciones.add("Hay bastante margen de ahorro; empieza por lo siguiente:");
                 break;
         }
 
+        agregarConsejoDelEquipoConMasConsumo(request, recomendaciones);
+        agregarAvisoDeUsoEnHorarioPico(request, recomendaciones);
+        agregarAvisoDeConsumoPorPersona(request, recomendaciones);
+
         return recomendaciones;
+    }
+
+    /**
+     * Estima cuánto aporta cada tipo de equipo al consumo diario (cantidad
+     * declarada × su coeficiente de {@code KWH_DIA_*}) y agrega un consejo
+     * específico sobre el que más pesa, con su consumo y costo mensual
+     * estimados en números concretos (no solo el porcentaje). Si hay un
+     * segundo equipo que también representa una parte importante del
+     * consumo (≥ {@link #UMBRAL_SEGUNDO_EQUIPO_PORCENTAJE}), se agrega un
+     * segundo consejo para él — así la recomendación no siempre gira
+     * alrededor de un único equipo (típicamente el aire acondicionado)
+     * entre distintos análisis. No agrega nada si el usuario no declaró
+     * ningún equipo (todo en 0).
+     */
+    private void agregarConsejoDelEquipoConMasConsumo(AnalisisRequest request, List<String> recomendaciones) {
+        Map<String, Double> aportePorEquipoDiario = new LinkedHashMap<>();
+        aportePorEquipoDiario.put("Refrigeradores", request.getCantidadRefrigeradores() * KWH_DIA_REFRIGERADOR);
+        aportePorEquipoDiario.put("Microondas", request.getCantidadMicroondas() * KWH_DIA_MICROONDAS);
+        aportePorEquipoDiario.put("Lavadoras", request.getCantidadLavadoras() * KWH_DIA_LAVADORA);
+        aportePorEquipoDiario.put("Pantallas", request.getCantidadPantallas() * KWH_DIA_PANTALLA);
+        aportePorEquipoDiario.put("Aire acondicionado", request.getCantidadAireAcondicionado() * KWH_DIA_AIRE_ACONDICIONADO);
+        aportePorEquipoDiario.put("Focos", request.getCantidadFocos() * KWH_DIA_FOCO);
+
+        double totalDiario = aportePorEquipoDiario.values().stream().mapToDouble(Double::doubleValue).sum();
+        if (totalDiario <= 0) {
+            return;
+        }
+
+        List<Map.Entry<String, Double>> ordenadosDeMayorAMenor = aportePorEquipoDiario.entrySet().stream()
+                .filter(equipo -> equipo.getValue() > 0)
+                .sorted(Map.Entry.<String, Double>comparingByValue().reversed())
+                .toList();
+
+        Map.Entry<String, Double> equipoTop = ordenadosDeMayorAMenor.get(0);
+        recomendaciones.add(String.format(
+                "%s: tu equipo con más peso en el consumo estimado. %s",
+                formatearEquipoConNumeros(equipoTop, totalDiario), consejoParaEquipo(equipoTop.getKey())));
+
+        if (ordenadosDeMayorAMenor.size() > 1) {
+            Map.Entry<String, Double> segundoEquipo = ordenadosDeMayorAMenor.get(1);
+            double porcentajeSegundo = (segundoEquipo.getValue() / totalDiario) * 100;
+            if (porcentajeSegundo >= UMBRAL_SEGUNDO_EQUIPO_PORCENTAJE) {
+                recomendaciones.add(String.format(
+                        "También pesa bastante: %s. %s",
+                        formatearEquipoConNumeros(segundoEquipo, totalDiario),
+                        consejoParaEquipo(segundoEquipo.getKey())));
+            }
+        }
+    }
+
+    /**
+     * Formatea un equipo con sus números concretos: kWh/mes, costo
+     * estimado en $/mes (a la tarifa de referencia), y el porcentaje que
+     * representa sobre el total estimado en equipos.
+     *
+     * @param equipo entrada equipo -> consumo diario estimado (kWh/día)
+     * @param totalDiario suma del consumo diario estimado de todos los equipos
+     */
+    private String formatearEquipoConNumeros(Map.Entry<String, Double> equipo, double totalDiario) {
+        double kwhMes = equipo.getValue() * DIAS_POR_MES;
+        double costoMes = kwhMes * TARIFA_KWH;
+        double porcentaje = (equipo.getValue() / totalDiario) * 100;
+        return String.format("%s (~%.0f kWh/mes, ~$%.2f/mes, %.0f%% de tu consumo en equipos)",
+                equipo.getKey(), kwhMes, costoMes, porcentaje);
+    }
+
+    /** Consejo concreto según qué tipo de equipo resultó ser el de mayor consumo. */
+    private String consejoParaEquipo(String equipo) {
+        return switch (equipo) {
+            case "Refrigeradores" -> "Revisa que los empaques cierren bien y evita dejarlo abierto mucho tiempo.";
+            case "Microondas" -> "Consume poco por sí solo; evita dejarlo conectado sin uso.";
+            case "Lavadoras" -> "Usa cargas completas, agua fría, y evita lavar en horario pico.";
+            case "Pantallas" -> "Apágalas por completo (no solo en espera) cuando no las estés usando.";
+            case "Aire acondicionado" -> "Súbele 1-2°C a la temperatura (cada grado puede ahorrarte ~6-10% de su consumo) y evita usarlo en horario pico: es donde más impacto vas a notar.";
+            case "Focos" -> "Si no son LED, cambiarlos puede darte un ahorro notable con poca inversión.";
+            default -> "";
+        };
+    }
+
+    /**
+     * Si una parte grande del consumo total ocurre en horario pico
+     * (por encima de {@link #UMBRAL_PICO_ALTO_PORCENTAJE}), agrega un
+     * aviso puntual — mover esas actividades de horario es de los
+     * cambios con más impacto en la categoría y el costo.
+     */
+    private void agregarAvisoDeUsoEnHorarioPico(AnalisisRequest request, List<String> recomendaciones) {
+        if (request.getConsumoKwh() <= 0) {
+            return;
+        }
+        double porcentajePico = (request.getUsoHorarioPicoKwh() / request.getConsumoKwh()) * 100;
+        if (porcentajePico > UMBRAL_PICO_ALTO_PORCENTAJE) {
+            double costoPico = request.getUsoHorarioPicoKwh() * TARIFA_KWH;
+            recomendaciones.add(String.format(
+                    "El %.0f%% de tu consumo (%.0f kWh/mes, ~$%.2f/mes) ocurre en horario pico. Mover esas "
+                            + "actividades a otro horario puede bajar tu costo y mejorar tu categoría.",
+                    porcentajePico, request.getUsoHorarioPicoKwh(), costoPico));
+        }
+    }
+
+    /**
+     * Si el consumo mensual dividido entre el número de personas del
+     * hogar supera {@link #UMBRAL_CONSUMO_POR_PERSONA_ALTO}, agrega un
+     * aviso — puede indicar equipos encendidos sin necesidad.
+     */
+    private void agregarAvisoDeConsumoPorPersona(AnalisisRequest request, List<String> recomendaciones) {
+        if (request.getTamanoHogar() <= 0) {
+            return;
+        }
+        double consumoPorPersona = request.getConsumoKwh() / request.getTamanoHogar();
+        if (consumoPorPersona > UMBRAL_CONSUMO_POR_PERSONA_ALTO) {
+            double costoPorPersona = consumoPorPersona * TARIFA_KWH;
+            recomendaciones.add(String.format(
+                    "Tu consumo por persona (~%.0f kWh/mes, ~$%.2f/mes) está por encima de lo típico; "
+                            + "vale la pena revisar si hay equipos encendidos sin uso.",
+                    consumoPorPersona, costoPorPersona));
+        }
     }
 
     /**

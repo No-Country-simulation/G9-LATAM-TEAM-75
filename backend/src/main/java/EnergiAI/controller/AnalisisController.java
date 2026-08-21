@@ -2,9 +2,9 @@ package EnergiAI.controller;
 
 import EnergiAI.dto.AnalisisRequest;
 import EnergiAI.dto.AnalisisResponse;
+import EnergiAI.dto.LoteAnalisisRequest;
 import EnergiAI.service.AnalisisService;
 import jakarta.validation.Valid;
-import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -20,6 +20,8 @@ import java.util.List;
  * <ul>
  *   <li>{@code POST /analisis-energetico} — analiza el consumo y devuelve la
  *       clasificación, la probabilidad, el costo estimado y recomendaciones.</li>
+ *   <li>{@code POST /analisis-energetico/lote} — analiza varias filas de un
+ *       jalón (ej. un CSV subido desde el frontend).</li>
  *   <li>{@code GET /analisis-energetico} — consulta los análisis hechos en
  *       la sesión actual (más reciente primero). No hay base de datos:
  *       vive en memoria, atado a la sesión de ESTE navegador únicamente.</li>
@@ -31,18 +33,12 @@ import java.util.List;
  * método devuelve directamente un objeto Java que Spring serializa a JSON con
  * Jackson (no hay vistas HTML de por medio).
  *
- * {@code @CrossOrigin} habilita CORS solo para {@code http://localhost:4200}
- * (donde corre el frontend en desarrollo), para que el navegador no bloquee
- * las peticiones que hace Angular hacia este backend por venir de otro origen.
- * {@code allowCredentials = "true"} es necesario para que la cookie de
- * sesión (que identifica de quién es el historial en
- * {@link EnergiAI.session.HistorialSesion}) viaje entre el frontend
- * ({@code :4200}) y el backend ({@code :8080}) a pesar de ser orígenes
- * distintos — por eso también se exige un origen exacto arriba en vez de
- * {@code "*"} (el estándar CORS no permite combinar credenciales con
- * "cualquier origen").
+ * CORS (qué orígenes pueden llamar a esta API) se configura aparte, en
+ * {@link EnergiAI.config.WebConfig}, no acá con {@code @CrossOrigin} —
+ * así el origen permitido se puede cambiar según el entorno (desarrollo
+ * local vs. desplegado) sin tocar código, vía la propiedad
+ * {@code app.cors.allowed-origin}.
  */
-@CrossOrigin(origins = "http://localhost:4200", allowCredentials = "true")
 @RestController
 public class AnalisisController {
 
@@ -54,6 +50,13 @@ public class AnalisisController {
      */
     private final AnalisisService analisisService;
 
+    /**
+     * Constructor usado por Spring para inyectar {@link AnalisisService}
+     * ({@code @Autowired} implícito: al haber un solo constructor, Spring
+     * no necesita la anotación explícita).
+     *
+     * @param analisisService el servicio con la lógica del análisis energético
+     */
     public AnalisisController(AnalisisService analisisService) {
         this.analisisService = analisisService;
     }
@@ -79,6 +82,20 @@ public class AnalisisController {
     @PostMapping("/analisis-energetico")
     public AnalisisResponse analizar(@Valid @RequestBody AnalisisRequest request) {
         return analisisService.analizar(request);
+    }
+
+    /**
+     * Procesamiento por lotes: analiza varias filas de un jalón (pensado
+     * para cuando el frontend sube un CSV con varias viviendas). Cada
+     * fila se valida y se guarda en el historial de la sesión igual que
+     * un análisis normal.
+     *
+     * @param lote la lista de peticiones a analizar
+     * @return un resultado por cada fila, en el mismo orden
+     */
+    @PostMapping("/analisis-energetico/lote")
+    public List<AnalisisResponse> analizarLote(@Valid @RequestBody LoteAnalisisRequest lote) {
+        return analisisService.analizarLote(lote.getAnalisis());
     }
 
     /**

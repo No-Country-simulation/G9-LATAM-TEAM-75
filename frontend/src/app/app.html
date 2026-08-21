@@ -1,7 +1,23 @@
 <header class="cabecera">
   <div class="cabecera-contenido">
     <div class="marca">
-      <span class="logo">⚡</span>
+      <span class="logo">
+        <svg viewBox="0 0 32 32" width="30" height="30" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <defs>
+            <linearGradient id="logoGradHeader" x1="4" y1="4" x2="28" y2="28" gradientUnits="userSpaceOnUse">
+              <stop offset="0" stop-color="var(--verde-azulado)" />
+              <stop offset="1" stop-color="var(--verde-lima)" />
+            </linearGradient>
+          </defs>
+          <path d="M17.5 2.5 L7 17h6.2l-1.7 12.5L25 15h-6.3l-0.7-12.5Z" fill="url(#logoGradHeader)" />
+          <circle cx="26" cy="7" r="2" fill="url(#logoGradHeader)" />
+          <circle cx="29" cy="14" r="1.3" fill="url(#logoGradHeader)" />
+          <circle cx="4" cy="23" r="1.6" fill="url(#logoGradHeader)" />
+          <path d="M26 7 L19 12.5" stroke="url(#logoGradHeader)" stroke-width="1.2" stroke-linecap="round" />
+          <path d="M29 14 L22 15" stroke="url(#logoGradHeader)" stroke-width="1.2" stroke-linecap="round" />
+          <path d="M4 23 L11 20" stroke="url(#logoGradHeader)" stroke-width="1.2" stroke-linecap="round" />
+        </svg>
+      </span>
       <div>
         <h1>EnergiAI</h1>
         <p>Descubre tu perfil de consumo eléctrico y cómo ahorrar</p>
@@ -11,92 +27,105 @@
 </header>
 
 <div class="pagina">
-  <!-- KPIs del dashboard -->
-  <div class="kpis">
-    <div class="kpi">
-      <span class="kpi-icono">📈</span>
-      <div>
-        <span class="kpi-valor">{{ totalAnalisis() }}</span>
-        <span class="kpi-etiqueta">Análisis realizados</span>
-      </div>
-    </div>
-    <div class="kpi">
-      <span class="kpi-icono">💵</span>
-      <div>
-        <span class="kpi-valor">${{ costoPromedio() }}</span>
-        <span class="kpi-etiqueta">Costo promedio mensual</span>
-      </div>
-    </div>
-    <div class="kpi">
-      <span class="kpi-icono">🔌</span>
-      <div>
-        <span class="kpi-valor">{{ consumoPromedio() }} kWh</span>
-        <span class="kpi-etiqueta">Consumo promedio</span>
-      </div>
-    </div>
-    <div class="kpi" [ngClass]="claseCategoria(categoriaMasFrecuente())">
-      <span class="kpi-icono">{{ iconoCategoria(categoriaMasFrecuente()) || '—' }}</span>
-      <div>
-        <span class="kpi-valor">{{ categoriaMasFrecuente() }}</span>
-        <span class="kpi-etiqueta">Perfil más frecuente</span>
-      </div>
-    </div>
-  </div>
-
   <div class="layout">
     <!-- Formulario -->
     <div class="tarjeta formulario">
       <h2>Nuevo análisis</h2>
 
       <div class="seccion">
+        <h3 class="seccion-titulo">Fecha del recibo</h3>
+
+        <div class="fila-dos">
+          <label>
+            Mes del recibo
+            <select [(ngModel)]="mes">
+              <option [ngValue]="null">Sin especificar</option>
+              <option *ngFor="let m of mesesDisponibles" [ngValue]="m">{{ m }}</option>
+            </select>
+          </label>
+
+          <label>
+            Año del recibo
+            <select [(ngModel)]="anio">
+              <option *ngFor="let a of aniosDisponibles" [ngValue]="a">{{ a }}</option>
+            </select>
+          </label>
+        </div>
+      </div>
+
+      <div class="seccion">
         <h3 class="seccion-titulo">Consumo eléctrico</h3>
 
-        <label>
-          ¿Cuántos kWh consumiste este mes?
-          <input type="number" [(ngModel)]="consumoKwh" placeholder="Ej: 180" min="0" />
-        </label>
+        <div class="fila-dos">
+          <label>
+            kWh consumidos este mes
+            <input type="number" [(ngModel)]="consumoKwh" placeholder="Ej: 180" min="0" />
+          </label>
 
-        <label>
-          ¿Cuántos kWh usas en horario pico?
-          <input type="number" [(ngModel)]="usoHorarioPicoKwh" placeholder="Ej: 32" min="0" />
-          <small>El horario pico suele ser por la tarde-noche, cuando la red está más saturada.</small>
-        </label>
+          <label>
+            Número de horas pico
+            <input type="number" [(ngModel)]="usoHorarioPicoKwh" placeholder="Ej: 32" min="0" />
+          </label>
+        </div>
+        <small>El horario pico suele ser por la tarde-noche, cuando la red está más saturada.</small>
       </div>
 
       <div class="seccion">
         <h3 class="seccion-titulo">Vivienda</h3>
 
-        <label>
-          ¿Cuántas personas viven en el hogar?
-          <input type="number" [(ngModel)]="tamanoHogar" placeholder="Ej: 4" min="1" max="30" />
-        </label>
+        <div class="fila-dos">
+          <label>
+            Personas en el hogar
+            <input type="number" [(ngModel)]="tamanoHogar" placeholder="Ej: 4" min="1" max="30" />
+          </label>
 
-        <label>
-          Temperatura promedio de la zona (°C)
-          <input type="number" [(ngModel)]="temperaturaPromedio" placeholder="Ej: 18" min="-30" max="55" />
-        </label>
+          <label>
+            Temperatura promedio (°C)
+            <input type="number" [(ngModel)]="temperaturaPromedio" placeholder="Ej: 18" min="-30" max="55" />
+          </label>
+        </div>
+      </div>
 
-        <label>
-          ¿Tienes aire acondicionado?
-          <div class="chips">
-            <button
-              type="button"
-              class="chip"
-              [class.activo]="tieneAireAcondicionado === true"
-              (click)="tieneAireAcondicionado = true"
-            >
-              Sí
-            </button>
-            <button
-              type="button"
-              class="chip"
-              [class.activo]="tieneAireAcondicionado === false"
-              (click)="tieneAireAcondicionado = false"
-            >
-              No
-            </button>
-          </div>
-        </label>
+      <div class="seccion">
+        <h3 class="seccion-titulo">¿Cuántos equipos tienes?</h3>
+
+        <div class="grid-equipos">
+          <label class="equipo">
+            <span class="equipo-icono">🧊</span>
+            Refrigeradores
+            <input type="number" [(ngModel)]="cantidadRefrigeradores" placeholder="0" min="0" max="5" />
+          </label>
+
+          <label class="equipo">
+            <span class="equipo-icono">📡</span>
+            Microondas
+            <input type="number" [(ngModel)]="cantidadMicroondas" placeholder="0" min="0" max="5" />
+          </label>
+
+          <label class="equipo">
+            <span class="equipo-icono">🌀</span>
+            Lavadoras
+            <input type="number" [(ngModel)]="cantidadLavadoras" placeholder="0" min="0" max="5" />
+          </label>
+
+          <label class="equipo">
+            <span class="equipo-icono">📺</span>
+            Pantallas
+            <input type="number" [(ngModel)]="cantidadPantallas" placeholder="0" min="0" max="5" />
+          </label>
+
+          <label class="equipo">
+            <span class="equipo-icono">❄️</span>
+            Aires A/C
+            <input type="number" [(ngModel)]="cantidadAireAcondicionado" placeholder="0" min="0" max="5" />
+          </label>
+
+          <label class="equipo">
+            <span class="equipo-icono">💡</span>
+            Focos
+            <input type="number" [(ngModel)]="cantidadFocos" placeholder="0" min="0" max="20" />
+          </label>
+        </div>
       </div>
 
       <button class="btn-analizar" (click)="analizar()" [disabled]="cargando()">
@@ -116,6 +145,15 @@
       >
         <span class="etiqueta">Tu perfil de consumo</span>
 
+        <div class="comparacion" *ngIf="comparacionConAnterior() as comp">
+          <span class="comparacion-icono">{{ comp.mejoro ? '📈' : comp.empeoro ? '📉' : '➖' }}</span>
+          <span>
+            {{ comp.mejoro ? 'Mejoraste' : comp.empeoro ? 'Empeoraste' : 'Igual' }} vs. tu análisis anterior:
+            {{ comp.deltaCosto > 0 ? '+' : '' }}${{ comp.deltaCosto }}
+            ({{ comp.deltaCostoPct > 0 ? '+' : '' }}{{ comp.deltaCostoPct }}%)
+          </span>
+        </div>
+
         <div class="anillo" [style.--pct.%]="porcentajeProbabilidad()">
           <div class="anillo-centro">
             <span class="anillo-icono">{{ iconoCategoria(resultado.categoria) }}</span>
@@ -124,6 +162,15 @@
         </div>
 
         <h2 class="categoria">{{ resultado.categoria }}</h2>
+
+        <button
+          type="button"
+          class="alerta-boton"
+          *ngIf="resultado.categoria === 'Ineficiente'"
+          (click)="abrirAlerta()"
+        >
+          🚨 Ver alerta de alto consumo
+        </button>
 
         <div class="costo">
           <span>Costo estimado mensual</span>
@@ -137,6 +184,76 @@
               <span class="rec-check">✓</span>{{ rec }}
             </li>
           </ul>
+        </div>
+
+        <div class="simulador">
+          <p class="simulador-titulo">💡 Simula un ahorro</p>
+
+          <div class="simulador-bloque">
+            <p class="simulador-explicacion">
+              Elige cuánto reducirías tu consumo en horario pico y descubre cuánto te ahorrarías al mes.
+            </p>
+            <label class="simulador-slider">
+              Reducir tu uso en horario pico
+              <div class="simulador-slider-fila">
+                <input
+                  type="range"
+                  min="5"
+                  max="50"
+                  step="5"
+                  [(ngModel)]="porcentajeReduccion"
+                  (change)="simularAhorro()"
+                />
+                <span class="simulador-valor">{{ porcentajeReduccion }}%</span>
+              </div>
+            </label>
+            <div class="simulador-paso" *ngIf="simulacion() && ahorroPicoMensual() > 0">
+              Ahorrarías <strong>${{ ahorroPicoMensual() }}</strong>/mes
+            </div>
+          </div>
+
+          <div class="simulador-bloque" *ngIf="cantidadAireAcondicionado && cantidadAireAcondicionado > 0">
+            <p class="simulador-explicacion">
+              Elige cuántos aires acondicionados seguirías usando y descubre cuánto ahorrarías.
+            </p>
+            <label class="simulador-slider">
+              ¿Cuántos aires acondicionados seguirías usando? (de {{ cantidadAireAcondicionado }})
+              <div class="simulador-slider-fila">
+                <input
+                  type="range"
+                  min="0"
+                  [max]="cantidadAireAcondicionado"
+                  step="1"
+                  [(ngModel)]="aireAcondicionadoSimulado"
+                  (change)="simularAhorro()"
+                />
+                <span class="simulador-valor">{{ aireAcondicionadoSimulado }}</span>
+              </div>
+            </label>
+            <div class="simulador-paso" *ngIf="simulacion() && ahorroAireAcondicionadoMensual() > 0">
+              Ahorrarías <strong>${{ ahorroAireAcondicionadoMensual() }}</strong>/mes
+            </div>
+          </div>
+
+          <p class="simulador-cargando" *ngIf="simulando()">Calculando...</p>
+          <p class="error" *ngIf="errorSimulacion()">⚠️ {{ errorSimulacion() }}</p>
+
+          <div class="simulador-resultado" *ngIf="simulacion() as sim; else simuladorVacio">
+            <div class="simulador-ahorro" *ngIf="ahorroMensual() > 0">
+              Total: ahorrarías <strong>${{ ahorroMensual() }}</strong> al mes
+            </div>
+            <div class="simulador-ahorro" *ngIf="ahorroMensual() <= 0">
+              Con esos ajustes no verías un ahorro. Prueba subir los controles.
+            </div>
+            <div class="simulador-nuevo-total">
+              Tu nuevo costo estimado sería <strong>${{ sim.costo_estimado_mensual }}</strong> al mes
+            </div>
+          </div>
+          <ng-template #simuladorVacio>
+            <p class="simulador-ayuda" *ngIf="!simulando()">
+              Mueve el control para calcular tu ahorro automáticamente.
+            </p>
+          </ng-template>
         </div>
       </div>
 
@@ -161,7 +278,30 @@
   <div class="tarjeta historial" *ngIf="totalAnalisis() > 0">
     <div class="historial-cabecera">
       <h2>Historial de análisis</h2>
-      <button type="button" class="btn-limpiar" (click)="limpiarHistorial()">Borrar historial</button>
+      <div class="historial-acciones">
+        <button type="button" class="btn-descargar" (click)="descargarHistorialExcel()">⬇️ Descargar historial</button>
+        <button type="button" class="btn-limpiar" (click)="limpiarHistorial()">Borrar historial</button>
+      </div>
+    </div>
+
+    <!-- Ranking de tus propios análisis (no hay ranking entre personas: el historial es por sesión) -->
+    <div class="ranking" *ngIf="totalAnalisis() > 1">
+      <div class="ranking-columna">
+        <p class="ranking-titulo">🏆 Tus mejores análisis</p>
+        <div class="ranking-item" *ngFor="let item of rankingMejores(); let i = index">
+          <span class="ranking-medalla">{{ medalla(i) }}</span>
+          <span class="ranking-categoria" [ngClass]="claseCategoria(item.categoria)">{{ item.categoria }}</span>
+          <span class="ranking-costo">${{ item.costo_estimado_mensual }}</span>
+        </div>
+      </div>
+      <div class="ranking-columna">
+        <p class="ranking-titulo">📉 Mayor consumo</p>
+        <div class="ranking-item" *ngFor="let item of rankingPeores(); let i = index">
+          <span class="ranking-medalla">{{ medalla(i) }}</span>
+          <span class="ranking-categoria" [ngClass]="claseCategoria(item.categoria)">{{ item.categoria }}</span>
+          <span class="ranking-costo">${{ item.costo_estimado_mensual }}</span>
+        </div>
+      </div>
     </div>
 
     <div class="grafico">
@@ -170,8 +310,9 @@
           class="barra"
           [ngClass]="claseCategoria(barra.item.categoria)"
           [style.height.%]="barra.alturaPct"
-          [title]="'$' + barra.item.costo_estimado_mensual"
+          [title]="mesCortoBarra(barra.item) + ': $' + barra.item.costo_estimado_mensual"
         ></div>
+        <span class="grafico-mes">{{ mesCortoBarra(barra.item) }}</span>
         <span class="grafico-etiqueta">${{ barra.item.costo_estimado_mensual }}</span>
       </div>
     </div>
@@ -181,17 +322,89 @@
         <span class="historial-icono" [ngClass]="claseCategoria(item.categoria)">
           {{ iconoCategoria(item.categoria) }}
         </span>
-        <span class="historial-categoria">{{ item.categoria }}</span>
-        <span class="historial-detalle">{{ item.consumo_kwh }} kWh</span>
+        <div class="historial-info">
+          <span class="historial-categoria" [ngClass]="claseCategoria(item.categoria)">{{ item.categoria }}</span>
+          <span class="historial-detalle">{{ item.consumo_kwh }} kWh</span>
+        </div>
         <span class="historial-costo">${{ item.costo_estimado_mensual }}</span>
-        <span class="historial-fecha">{{ formatearFecha(item.fecha) }}</span>
+        <span class="historial-fecha">{{ etiquetaHistorial(item) }}</span>
       </li>
     </ul>
   </div>
 
+  <!-- Procesamiento por lotes (CSV o Excel) -->
+  <div class="tarjeta lote">
+    <h2>Análisis por lotes (CSV o Excel)</h2>
+    <p class="lote-texto">
+      Sube un archivo CSV o Excel (.xlsx) con un recibo por fila para analizarlos todos de un jalón.
+      Debe tener estas columnas en la primera fila (en cualquier orden); <strong>mes</strong> y <strong>anio</strong>
+      son opcionales, solo para identificar cada fila en los resultados y en el historial:
+    </p>
+    <code class="lote-columnas">
+      mes,anio,consumo_kwh,uso_horario_pico_kwh,tamano_hogar,temperatura_promedio,refrigeradores,microondas,lavadoras,pantallas,aire_acondicionado,focos
+    </code>
+
+    <div class="lote-acciones">
+      <label class="lote-boton">
+        {{ loteCargando() ? 'Procesando...' : (nombreArchivoCsv() || 'Elegir archivo CSV o Excel') }}
+        <input type="file" accept=".csv,.xlsx" (change)="onArchivoLoteSeleccionado($event)" [disabled]="loteCargando()" />
+      </label>
+
+      <button type="button" class="lote-boton-ejemplo" (click)="descargarPlantillaExcel()">
+        ⬇️ Descargar plantilla Excel
+      </button>
+    </div>
+
+    <p class="error" *ngIf="loteError()">⚠️ {{ loteError() }}</p>
+
+    <ul class="lote-errores" *ngIf="loteErroresFilas().length > 0">
+      <li *ngFor="let err of loteErroresFilas()">{{ err }}</li>
+    </ul>
+
+    <table class="lote-tabla" *ngIf="lote().length > 0">
+      <thead>
+        <tr>
+          <th>Mes</th>
+          <th>Categoría</th>
+          <th>Consumo</th>
+          <th>Costo mensual</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let fila of lote()">
+          <td>{{ fila.mes }}</td>
+          <td>
+            <span class="historial-icono" [ngClass]="claseCategoria(fila.resultado.categoria)">
+              {{ iconoCategoria(fila.resultado.categoria) }}
+            </span>
+            {{ fila.resultado.categoria }}
+          </td>
+          <td>{{ fila.resultado.consumo_kwh }} kWh</td>
+          <td>${{ fila.resultado.costo_estimado_mensual }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
   <footer class="pie">
     <div class="pie-marca">
-      <span class="logo">⚡</span>
+      <span class="logo">
+        <svg viewBox="0 0 32 32" width="18" height="18" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <defs>
+            <linearGradient id="logoGradFooter" x1="4" y1="4" x2="28" y2="28" gradientUnits="userSpaceOnUse">
+              <stop offset="0" stop-color="var(--verde-azulado)" />
+              <stop offset="1" stop-color="var(--verde-lima)" />
+            </linearGradient>
+          </defs>
+          <path d="M17.5 2.5 L7 17h6.2l-1.7 12.5L25 15h-6.3l-0.7-12.5Z" fill="url(#logoGradFooter)" />
+          <circle cx="26" cy="7" r="2" fill="url(#logoGradFooter)" />
+          <circle cx="29" cy="14" r="1.3" fill="url(#logoGradFooter)" />
+          <circle cx="4" cy="23" r="1.6" fill="url(#logoGradFooter)" />
+          <path d="M26 7 L19 12.5" stroke="url(#logoGradFooter)" stroke-width="1.2" stroke-linecap="round" />
+          <path d="M29 14 L22 15" stroke="url(#logoGradFooter)" stroke-width="1.2" stroke-linecap="round" />
+          <path d="M4 23 L11 20" stroke="url(#logoGradFooter)" stroke-width="1.2" stroke-linecap="round" />
+        </svg>
+      </span>
       <span>EnergiAI</span>
     </div>
 
@@ -205,4 +418,23 @@
       Proyecto para el Hackathon ONE · G9 LATAM · Alura + Oracle
     </p>
   </footer>
+</div>
+
+<!-- Alerta flotante de alto consumo: aparece automáticamente cuando el
+     resultado es "Ineficiente", con todas las recomendaciones adentro. -->
+<div class="alerta-fondo" *ngIf="alertaAbierta() && resultado() as res" (click)="cerrarAlerta()">
+  <div class="alerta-flotante" (click)="$event.stopPropagation()">
+    <button type="button" class="alerta-cerrar" (click)="cerrarAlerta()" aria-label="Cerrar">✕</button>
+    <div class="alerta-icono">🚨</div>
+    <h2 class="alerta-titulo">Alerta de alto consumo</h2>
+    <p class="alerta-texto">
+      Tu perfil está en la categoría más ineficiente. Aquí tienes todas las recomendaciones para reducir tu gasto:
+    </p>
+    <ul class="alerta-recomendaciones">
+      <li *ngFor="let rec of res.recomendaciones">
+        <span class="rec-check">✓</span>{{ rec }}
+      </li>
+    </ul>
+    <button type="button" class="alerta-boton-entendido" (click)="cerrarAlerta()">Entendido</button>
+  </div>
 </div>

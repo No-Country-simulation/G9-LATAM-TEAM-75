@@ -85,6 +85,7 @@ public class ModeloDataClient {
 
         try {
             PrediccionModelo prediccion = restTemplate.postForObject(url, request, PrediccionModelo.class);
+            logger.info("Predicción obtenida del microservicio de Data en {}: {}", url, prediccion);
             return Optional.ofNullable(prediccion);
         } catch (Exception e) {
             // Se captura Exception (no un tipo más específico) a propósito:
