@@ -290,7 +290,11 @@ public class AnalisisService {
      * @param categoria una de {@code "Eficiente"}, {@code "Moderado"} o
      *                  {@code "Ineficiente"}
      * @return entre 2 y 4 recomendaciones en texto plano
-     */
+    * 
+    */
+
+
+
     private List<String> recomendacionesPersonalizadas(AnalisisRequest request, String categoria) {
         List<String> recomendaciones = new ArrayList<>();
 
