@@ -24,6 +24,7 @@ Proyecto para el **Hackathon ONE** (Alura + Oracle) — equipo **G9 LATAM**
 - [Stack tecnológico](#stack-tecnológico)
 - [Funcionalidades](#funcionalidades)
 - [API REST](#api-rest)
+- [Ejemplos de uso](#ejemplos-de-uso)
 - [Ciencia de datos](#ciencia-de-datos)
 - [Cómo correrlo en local](#cómo-correrlo-en-local)
 - [Despliegue](#despliegue)
@@ -229,6 +230,64 @@ Todos los errores de la API responden con el mismo formato:
 | `405` | Método HTTP no soportado en esa ruta |
 | `500` | Error interno no previsto (se registra en el log del servidor, nunca se expone el detalle) |
 
+## 📋 Ejemplos de uso
+
+Tres casos reales, probados directamente contra la API desplegada en Railway — uno por cada categoría posible.
+
+<details>
+<summary><b>Caso 1 — Eficiente</b> (equipos de alto consumo, pero uso real bajo)</summary>
+
+**Entrada:**
+```json
+{
+  "consumo_kwh": 260, "uso_horario_pico_kwh": 40, "tamano_hogar": 4,
+  "temperatura_promedio": 30, "refrigeradores": 2, "microondas": 1,
+  "lavadoras": 2, "pantallas": 3, "aire_acondicionado": 2, "focos": 15,
+  "mes": "Junio", "anio": 2026
+}
+```
+**Salida:**
+```json
+{ "categoria": "Eficiente", "probabilidad": 0.5741, "costo_estimado_mensual": 195.0, "consumo_kwh": 260.0 }
+```
+</details>
+
+<details>
+<summary><b>Caso 2 — Moderado</b> (consumo dentro de lo esperado para sus equipos)</summary>
+
+**Entrada:**
+```json
+{
+  "consumo_kwh": 420, "uso_horario_pico_kwh": 150, "tamano_hogar": 4,
+  "temperatura_promedio": 30, "refrigeradores": 2, "microondas": 1,
+  "lavadoras": 2, "pantallas": 3, "aire_acondicionado": 2, "focos": 15,
+  "mes": "Julio", "anio": 2026
+}
+```
+**Salida:**
+```json
+{ "categoria": "Moderado", "probabilidad": 0.9309, "costo_estimado_mensual": 315.0, "consumo_kwh": 420.0 }
+```
+</details>
+
+<details>
+<summary><b>Caso 3 — Ineficiente</b> (pocos equipos, pero consumo real muy por encima de lo esperado)</summary>
+
+**Entrada:**
+```json
+{
+  "consumo_kwh": 180, "uso_horario_pico_kwh": 20, "tamano_hogar": 2,
+  "temperatura_promedio": 22, "refrigeradores": 1, "microondas": 1,
+  "lavadoras": 1, "pantallas": 1, "aire_acondicionado": 0, "focos": 6,
+  "mes": "Marzo", "anio": 2026
+}
+```
+**Salida:**
+```json
+{ "categoria": "Ineficiente", "probabilidad": 0.5481, "costo_estimado_mensual": 135.0, "consumo_kwh": 180.0 }
+```
+</details>
+
 ## 🔬 Ciencia de datos
 
 El modelo (`RandomForestRegressor`) predice el consumo diario esperado de una vivienda a partir de: tamaño del hogar, temperatura promedio, uso en horario pico, y la cantidad de cada tipo de electrodoméstico. El backend compara ese consumo esperado contra el consumo real declarado por el usuario para decidir la categoría (dentro de un margen = Moderado, muy por debajo = Eficiente, muy por encima = Ineficiente).
@@ -243,10 +302,13 @@ El modelo (`RandomForestRegressor`) predice el consumo diario esperado de una vi
 | RMSE | ≈ 1.05 kWh |
 | R² | ≈ 0.95 |
 
+**Notebook completo** ([`model/analisis_eda.ipynb`](model/analisis_eda.ipynb)): exploración y limpieza de datos (EDA), análisis de patrones de consumo (correlaciones, distribuciones, relación temperatura/aire acondicionado), transformación de variables, entrenamiento del modelo, evaluación, la lógica de clasificación y recomendaciones basadas en reglas, y la serialización del modelo — todo ejecutado, con las gráficas y salidas ya generadas.
+
 **Scripts (carpeta [`model/`](model/)):**
 
 | Archivo | Qué hace |
 |---|---|
+| `analisis_eda.ipynb` | Notebook con el flujo completo de Ciencia de Datos (EDA, patrones, entrenamiento, evaluación, recomendaciones, serialización) |
 | `generar_dataset.py` | Genera `dataset_consumo.csv` y se sube a OCI Object Storage |
 | `entrenamiento.py` | Lee el dataset directo desde OCI, entrena el `RandomForestRegressor`, evalúa (MAE/RMSE/R²), imprime la importancia de variables, y serializa el modelo con `joblib` (`random_forest_consumo.pkl`) |
 | `servidor.py` | Expone el modelo entrenado como API (`POST /predecir`) con FastAPI, listo para correr en Colab o como servicio persistente |
