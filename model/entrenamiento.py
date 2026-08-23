@@ -1,11 +1,11 @@
 # ============================================================
 # Entrenamiento del modelo de EnergiAI (Random Forest).
 #
-# Lee dataset_consumo.csv (generado con generar_dataset.py, y subido a
-# OCI Object Storage como fuente de datos del proyecto) y entrena un
-# RandomForestRegressor para predecir el consumo diario esperado de
-# una vivienda a partir de su tamaño, temperatura, uso en horario pico,
-# y cantidad de cada tipo de electrodoméstico.
+# Lee dataset_consumo.csv directo desde OCI Object Storage (subido con
+# generar_dataset.py) y entrena un RandomForestRegressor para predecir
+# el consumo diario esperado de una vivienda a partir de su tamaño,
+# temperatura, uso en horario pico, y cantidad de cada tipo de
+# electrodoméstico.
 #
 # Corre esto para regenerar random_forest_consumo.pkl:
 #   python entrenamiento.py
@@ -21,10 +21,20 @@ from sklearn.preprocessing import OneHotEncoder
 import joblib
 
 # ------------------------------------------------------------
-# 1. CARGAR EL DATASET
+# 1. CARGAR EL DATASET DESDE OCI OBJECT STORAGE
 # ------------------------------------------------------------
 
-df = pd.read_csv("dataset_consumo.csv")
+# Pre-Authenticated Request (solo lectura) hacia dataset_consumo.csv en
+# el bucket "energiai-dataset". Si expira o cambia, hay que generar uno
+# nuevo desde la consola de OCI (bucket -> objeto -> "Create
+# Pre-Authenticated Request") y actualizar esta URL.
+DATASET_URL = (
+    "https://objectstorage.mx-monterrey-1.oraclecloud.com/p/"
+    "vqLneS9Ystz9VrOzECrxDTSo8Iop7MS_xjdok3WbMscgsAU4QAn7pYAyI1CQInEG/"
+    "n/axlcnhna5fg5/b/energiai-dataset/o/dataset_consumo.csv"
+)
+
+df = pd.read_csv(DATASET_URL)
 
 print("Primeras filas del dataset:")
 print(df.head())
