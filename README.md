@@ -1,8 +1,20 @@
-# EnergiAI
+<div align="center">
 
-Solución inteligente para analizar el consumo eléctrico de una vivienda o pequeño establecimiento, clasificar su perfil energético (**Eficiente / Moderado / Ineficiente**), estimar el costo mensual y dar recomendaciones personalizadas para reducir el gasto.
+# ⚡ EnergiAI
 
-Proyecto para el **Hackathon ONE** (Alura + Oracle) — equipo **G9 LATAM**.
+**Analiza tu consumo eléctrico, descubre qué tan eficiente eres, y recibe recomendaciones reales para ahorrar.**
+
+[![Java](https://img.shields.io/badge/Java-21-ED8B00?logo=openjdk&logoColor=white)](backend)
+[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.1-6DB33F?logo=springboot&logoColor=white)](backend)
+[![Angular](https://img.shields.io/badge/Angular-22-DD0031?logo=angular&logoColor=white)](frontend)
+[![Python](https://img.shields.io/badge/Python-scikit--learn-3776AB?logo=python&logoColor=white)](model)
+[![FastAPI](https://img.shields.io/badge/FastAPI-model%20server-009688?logo=fastapi&logoColor=white)](model)
+[![OCI](https://img.shields.io/badge/OCI-Object%20Storage-F80000?logo=oracle&logoColor=white)](#ciencia-de-datos)
+[![Railway](https://img.shields.io/badge/Deploy-Railway-0B0D0E?logo=railway&logoColor=white)](#despliegue)
+
+Proyecto para el **Hackathon ONE** (Alura + Oracle) — equipo **G9 LATAM**
+
+</div>
 
 ---
 
@@ -20,7 +32,7 @@ Proyecto para el **Hackathon ONE** (Alura + Oracle) — equipo **G9 LATAM**.
 
 ---
 
-## Arquitectura
+## 🏗️ Arquitectura
 
 ```
 ┌─────────────┐      HTTPS       ┌──────────────────┐      HTTPS       ┌──────────────────────┐
@@ -36,15 +48,16 @@ Proyecto para el **Hackathon ONE** (Alura + Oracle) — equipo **G9 LATAM**.
 
 Los tres (frontend, backend y modelo) están desplegados como servicios independientes en Railway. El modelo también se puede correr en Google Colab + ngrok para pruebas rápidas sin desplegar nada.
 
-- **Frontend (Angular 22, zoneless)**: formulario de análisis, panel de resultado, historial, simulador de ahorro, análisis por lotes (CSV/Excel) y descarga de reportes en Excel.
-- **Backend (Spring Boot 4.1 / Java 21)**: valida la entrada, calcula el costo, arma las recomendaciones, guarda el historial de la sesión, y le pide la clasificación al modelo de Data — si el modelo no responde, cae automáticamente a un clasificador local de respaldo (mock por reglas), así la API nunca se cae por depender de un servicio externo.
-- **Modelo de Data**: un `RandomForestRegressor` (scikit-learn) servido con FastAPI (código en [`model/`](model/)). Se puede correr en Google Colab + ngrok (como se usó durante gran parte del desarrollo) o como un servicio persistente propio (ver [Despliegue](#despliegue)). El backend le manda los mismos datos del formulario y compara el consumo real contra lo que el modelo predice para esa vivienda.
-- **OCI**: el dataset de entrenamiento (`dataset_consumo.csv`) está almacenado en un bucket de **OCI Object Storage** (`energiai-dataset`), y `model/entrenamiento.py` lo lee directo de ahí para entrenar.
-- **Despliegue de la app**: backend y frontend están desplegados en **Railway** (ver [Despliegue](#despliegue)).
+| Componente | Responsabilidad |
+|---|---|
+| 🖥️ **Frontend** (Angular 22, zoneless) | Formulario de análisis, panel de resultado, historial, simulador de ahorro, análisis por lotes (CSV/Excel) y descarga de reportes en Excel. |
+| ⚙️ **Backend** (Spring Boot 4.1 / Java 21) | Valida la entrada, calcula el costo, arma las recomendaciones, guarda el historial de la sesión, y le pide la clasificación al modelo — si no responde, cae automáticamente a un clasificador local de respaldo, así la API nunca se cae por depender de un servicio externo. |
+| 🧠 **Modelo** (Python / scikit-learn) | Un `RandomForestRegressor` servido con FastAPI (código en [`model/`](model/)). Compara el consumo real declarado contra lo que predice para esa vivienda. |
+| ☁️ **OCI** | El dataset de entrenamiento (`dataset_consumo.csv`) vive en un bucket de **OCI Object Storage** (`energiai-dataset`); `model/entrenamiento.py` lo lee directo de ahí. |
 
-No hay base de datos: el historial de análisis vive en memoria, atado a la cookie de sesión del navegador (`@SessionScope` de Spring) — cada quien ve solo lo que analizó en su propia sesión, y desaparece si borra las cookies o se reinicia el backend.
+> No hay base de datos: el historial de análisis vive en memoria, atado a la cookie de sesión del navegador (`@SessionScope` de Spring) — cada quien ve solo lo que analizó en su propia sesión, y desaparece si borra las cookies o se reinicia el backend.
 
-## Stack tecnológico
+## 🧰 Stack tecnológico
 
 | Capa | Tecnología |
 |---|---|
@@ -52,10 +65,10 @@ No hay base de datos: el historial de análisis vive en memoria, atado a la cook
 | Backend | Java 21, Spring Boot 4.1, Spring Web, Bean Validation, springdoc-openapi (Swagger) |
 | Modelo | Python, scikit-learn (`RandomForestRegressor`), pandas, FastAPI |
 | Almacenamiento del dataset | OCI Object Storage |
-| Despliegue | Railway (backend + frontend), Railpack como builder |
+| Despliegue | Railway (3 servicios independientes), Railpack como builder |
 | Pruebas | JUnit 5 + Mockito (backend) |
 
-## Funcionalidades
+## ✅ Funcionalidades
 
 ### Requisitos obligatorios del MVP
 
@@ -86,12 +99,21 @@ No hay base de datos: el historial de análisis vive en memoria, atado a la cook
 - **Login/autenticación**: el historial es por sesión de navegador, no por usuario registrado.
 - **Base de datos**: el historial vive en memoria por diseño (ver [Arquitectura](#arquitectura)).
 
-## API REST 
+## 🔌 API REST
 
 Todos los endpoints devuelven JSON. Documentación interactiva completa en `/swagger-ui.html` una vez el backend está corriendo.
 
-### `POST /analisis-energetico`
+| Método | Ruta | Qué hace |
+|---|---|---|
+| `POST` | `/analisis-energetico` | Analiza un perfil de consumo y devuelve su clasificación |
+| `POST` | `/analisis-energetico/lote` | Igual, pero para varias viviendas de un jalón |
+| `GET` | `/analisis-energetico` | Consulta el historial de la sesión actual |
+| `DELETE` | `/analisis-energetico` | Borra el historial de la sesión actual |
+| `GET` | `/estado` | Endpoint de salud |
 
+---
+
+### `POST /analisis-energetico`
 
 Analiza un perfil de consumo y devuelve su clasificación.
 
@@ -113,53 +135,123 @@ Analiza un perfil de consumo y devuelve su clasificación.
 }
 ```
 
-**Salida:**
+`mes` y `anio` son opcionales — solo sirven para identificar el análisis en el historial y en las descargas.
+
+**Salida (`200 OK`):**
 ```json
 {
   "categoria": "Eficiente",
   "probabilidad": 0.7203,
   "costo_estimado_mensual": 165.0,
+  "consumo_kwh": 220.0,
+  "fecha": "2026-08-21T06:57:10.36",
   "recomendaciones": [
     "Tu perfil es eficiente: mantén estos hábitos.",
     "Aire acondicionado (~78 kWh/mes, ~$58.50/mes, 33% de tu consumo en equipos): tu equipo con más peso en el consumo estimado. Súbele 1-2°C a la temperatura..."
-  ],
-  "fecha": "2026-08-21T06:57:10.36",
-  "consumo_kwh": 220.0
+  ]
 }
 ```
 
-`mes` y `anio` son opcionales — solo sirven para identificar el análisis en el historial y en las descargas.
+---
 
 ### `POST /analisis-energetico/lote`
 
-Igual que el anterior, pero para varias viviendas a la vez (`{ "analisis": [ {...}, {...} ] }`). Pensado para cuando el frontend sube un CSV o Excel.
+Analiza varias viviendas a la vez — pensado para cuando el frontend sube un CSV o Excel con un recibo por fila.
+
+**Entrada:**
+```json
+{
+  "analisis": [
+    { "consumo_kwh": 220, "uso_horario_pico_kwh": 30, "tamano_hogar": 4, "temperatura_promedio": 24, "refrigeradores": 2, "microondas": 1, "lavadoras": 2, "pantallas": 2, "aire_acondicionado": 1, "focos": 10, "mes": "Enero" },
+    { "consumo_kwh": 450, "uso_horario_pico_kwh": 150, "tamano_hogar": 4, "temperatura_promedio": 24, "refrigeradores": 2, "microondas": 1, "lavadoras": 2, "pantallas": 2, "aire_acondicionado": 1, "focos": 10, "mes": "Febrero" }
+  ]
+}
+```
+
+**Salida (`200 OK`):** un arreglo con un resultado por cada fila, en el mismo orden, con la misma forma que `POST /analisis-energetico`.
+
+---
 
 ### `GET /analisis-energetico`
 
 Devuelve el historial de análisis de la sesión actual (identificada por cookie), más reciente primero.
 
+**Salida (`200 OK`):**
+```json
+[
+  {
+    "categoria": "Eficiente",
+    "probabilidad": 0.7203,
+    "costo_estimado_mensual": 165.0,
+    "consumo_kwh": 220.0,
+    "mes": "Agosto",
+    "anio": 2026,
+    "fecha": "2026-08-21T06:57:10.36",
+    "recomendaciones": ["..."]
+  }
+]
+```
+
+---
+
 ### `DELETE /analisis-energetico`
 
-Borra el historial de la sesión actual.
+Borra el historial de la sesión actual. Responde `200 OK` sin cuerpo.
+
+---
 
 ### `GET /estado`
 
-Endpoint de salud — confirma que la API está arriba.
+Endpoint de salud.
 
-## Ciencia de datos
+**Salida (`200 OK`, texto plano):**
+```
+API de análisis energético funcionando correctamente
+```
+
+---
+
+### Errores
+
+Todos los errores de la API responden con el mismo formato:
+
+```json
+{
+  "codigo": 400,
+  "mensaje": "Datos inválidos: consumo_kwh es obligatorio; "
+}
+```
+
+| Código | Cuándo ocurre |
+|---|---|
+| `400` | Datos inválidos (falta un campo, valor fuera de rango) o JSON mal formado |
+| `404` | Ruta que no existe |
+| `405` | Método HTTP no soportado en esa ruta |
+| `500` | Error interno no previsto (se registra en el log del servidor, nunca se expone el detalle) |
+
+## 🔬 Ciencia de datos
 
 El modelo (`RandomForestRegressor`) predice el consumo diario esperado de una vivienda a partir de: tamaño del hogar, temperatura promedio, uso en horario pico, y la cantidad de cada tipo de electrodoméstico. El backend compara ese consumo esperado contra el consumo real declarado por el usuario para decidir la categoría (dentro de un margen = Moderado, muy por debajo = Eficiente, muy por encima = Ineficiente).
 
 **Dataset:** generado de abajo hacia arriba — el consumo total (`Energy_Consumption_kWh`) se calcula a partir de coeficientes de consumo reales por tipo de equipo (refrigerador, microondas, lavadora, pantalla, aire acondicionado, foco), cada uno con su aporte diario típico en kWh. El uso en horario pico (`Peak_Hours_Usage_kWh`) se genera de forma independiente al consumo total, y la probabilidad de tener aire acondicionado aumenta con la temperatura promedio de la zona (reflejando un patrón real de clima). Con esta metodología, la importancia de variables del modelo queda repartida de forma realista (aire acondicionado y refrigeradores como los que más pesan, consistente con la vida real), validado con más de una decena de casos de prueba donde solo cambia el consumo real declarado, manteniendo el mismo equipo — el modelo distingue correctamente entre Eficiente, Moderado e Ineficiente.
 
-Métricas del modelo: MAE ≈ 0.83 kWh, RMSE ≈ 1.05 kWh, R² ≈ 0.95 (sobre un conjunto de prueba separado del de entrenamiento).
+**Métricas del modelo** (sobre un conjunto de prueba separado del de entrenamiento):
 
-**Notebook / scripts (carpeta [`model/`](model/)):**
-- `generar_dataset.py` — genera `dataset_consumo.csv` y se sube a OCI Object Storage.
-- `entrenamiento.py` — lee el dataset directo desde OCI, entrena el `RandomForestRegressor`, evalúa (MAE/RMSE/R²), imprime la importancia de variables, y serializa el modelo con `joblib` (`random_forest_consumo.pkl`).
-- `servidor.py` — expone el modelo entrenado como API (`POST /predecir`) con FastAPI, listo para correr en Colab o como servicio persistente.
+| Métrica | Valor |
+|---|---|
+| MAE | ≈ 0.83 kWh |
+| RMSE | ≈ 1.05 kWh |
+| R² | ≈ 0.95 |
 
-## Cómo correrlo en local
+**Scripts (carpeta [`model/`](model/)):**
+
+| Archivo | Qué hace |
+|---|---|
+| `generar_dataset.py` | Genera `dataset_consumo.csv` y se sube a OCI Object Storage |
+| `entrenamiento.py` | Lee el dataset directo desde OCI, entrena el `RandomForestRegressor`, evalúa (MAE/RMSE/R²), imprime la importancia de variables, y serializa el modelo con `joblib` (`random_forest_consumo.pkl`) |
+| `servidor.py` | Expone el modelo entrenado como API (`POST /predecir`) con FastAPI, listo para correr en Colab o como servicio persistente |
+
+## 💻 Cómo correrlo en local
 
 ### Backend
 
@@ -180,17 +272,19 @@ Corre en `http://localhost:4200`.
 
 Por defecto, el frontend en desarrollo apunta a `http://localhost:8080` y el backend solo acepta peticiones desde `http://localhost:4200` (CORS). El backend, por defecto, usa el modelo desplegado en Railway (estable); si ese servicio no está disponible por cualquier razón, cae automáticamente a un clasificador local de respaldo — la app nunca deja de funcionar.
 
-## Despliegue
+## 🚀 Despliegue
 
 Los tres componentes están desplegados en [Railway](https://railway.app), como tres servicios separados dentro del mismo proyecto (cada uno apuntando a su propia carpeta del repo):
 
-- **Frontend:** `https://scintillating-bravery-production-abf8.up.railway.app`
-- **Backend:** `https://g9-latam-team-75-production.up.railway.app`
-- **Modelo:** `https://profound-courage-production.up.railway.app`
+| Servicio | URL |
+|---|---|
+| 🖥️ Frontend | `https://scintillating-bravery-production-abf8.up.railway.app` |
+| ⚙️ Backend | `https://g9-latam-team-75-production.up.railway.app` |
+| 🧠 Modelo | `https://profound-courage-production.up.railway.app` |
 
 El modelo corre de forma permanente en su propio servicio (a partir de `model/`), así que ya no depende de que una sesión de Colab esté activa.
 
-Variables de entorno que usa el backend en producción (todas opcionales, con valores por defecto para desarrollo local):
+**Variables de entorno del backend** (todas opcionales, con valores por defecto para desarrollo local):
 
 | Variable | Para qué |
 |---|---|
@@ -199,7 +293,7 @@ Variables de entorno que usa el backend en producción (todas opcionales, con va
 | `CORS_ALLOWED_ORIGIN` | Origen permitido para CORS (la URL del frontend desplegado) |
 | `COOKIE_SAME_SITE` / `COOKIE_SECURE` | Atributos de la cookie de sesión, necesarios para que funcione entre dominios distintos de Railway |
 
-## Estructura del proyecto
+## 📂 Estructura del proyecto
 
 ```
 EnergiAI/
@@ -224,7 +318,7 @@ EnergiAI/
     └── random_forest_consumo.pkl
 ```
 
-## Pruebas automatizadas
+## 🧪 Pruebas automatizadas
 
 ```bash
 cd backend
@@ -232,3 +326,11 @@ cd backend
 ```
 
 11 pruebas (JUnit 5 + Mockito) cubriendo: clasificación por reglas (mock) en sus tres categorías, cálculo de costo, precedencia del modelo real sobre el mock, origen de las recomendaciones, y que las simulaciones no ensucien el historial real.
+
+---
+
+<div align="center">
+
+Hecho con ⚡ para el **Hackathon ONE** — G9 LATAM
+
+</div>
