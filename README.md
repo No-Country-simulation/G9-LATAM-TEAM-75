@@ -85,11 +85,12 @@ No hay base de datos: el historial de análisis vive en memoria, atado a la cook
 - **Login/autenticación**: el historial es por sesión de navegador, no por usuario registrado.
 - **Base de datos**: el historial vive en memoria por diseño (ver [Arquitectura](#arquitectura)).
 
-## API REST
+## API REST 
 
 Todos los endpoints devuelven JSON. Documentación interactiva completa en `/swagger-ui.html` una vez el backend está corriendo.
 
 ### `POST /analisis-energetico`
+
 
 Analiza un perfil de consumo y devuelve su clasificación.
 
