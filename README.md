@@ -37,8 +37,8 @@ Proyecto para el **Hackathon ONE** (Alura + Oracle) — equipo **G9 LATAM**.
 
 - **Frontend (Angular 22, zoneless)**: formulario de análisis, panel de resultado, historial, simulador de ahorro, análisis por lotes (CSV/Excel) y descarga de reportes en Excel.
 - **Backend (Spring Boot 4.1 / Java 21)**: valida la entrada, calcula el costo, arma las recomendaciones, guarda el historial de la sesión, y le pide la clasificación al modelo de Data — si el modelo no responde, cae automáticamente a un clasificador local de respaldo (mock por reglas), así la API nunca se cae por depender de un servicio externo.
-- **Modelo de Data**: un `RandomForestRegressor` (scikit-learn) servido con FastAPI, corriendo en Google Colab y expuesto con ngrok. El backend le manda los mismos datos del formulario y compara el consumo real contra lo que el modelo predice para esa vivienda.
-- **OCI**: el dataset de entrenamiento del modelo está almacenado en **OCI Object Storage**.
+- **Modelo de Data**: un `RandomForestRegressor` (scikit-learn) servido con FastAPI (código en [`model/`](model/)). Se puede correr en Google Colab + ngrok (como se usó durante gran parte del desarrollo) o como un servicio persistente propio (ver [Despliegue](#despliegue)). El backend le manda los mismos datos del formulario y compara el consumo real contra lo que el modelo predice para esa vivienda.
+- **OCI**: el dataset de entrenamiento (`dataset_consumo.csv`) está almacenado en un bucket de **OCI Object Storage** (`energiai-dataset`), y `model/entrenamiento.py` lo lee directo de ahí para entrenar.
 - **Despliegue de la app**: backend y frontend están desplegados en **Railway** (ver [Despliegue](#despliegue)).
 
 No hay base de datos: el historial de análisis vive en memoria, atado a la cookie de sesión del navegador (`@SessionScope` de Spring) — cada quien ve solo lo que analizó en su propia sesión, y desaparece si borra las cookies o se reinicia el backend.
@@ -149,11 +149,14 @@ Endpoint de salud — confirma que la API está arriba.
 
 El modelo (`RandomForestRegressor`) predice el consumo diario esperado de una vivienda a partir de: tamaño del hogar, temperatura promedio, uso en horario pico, y la cantidad de cada tipo de electrodoméstico. El backend compara ese consumo esperado contra el consumo real declarado por el usuario para decidir la categoría (dentro de un margen = Moderado, muy por debajo = Eficiente, muy por encima = Ineficiente).
 
-**Hallazgo relevante durante el desarrollo — fuga de datos:** la primera versión del dataset generaba las cantidades de electrodomésticos *a partir* del consumo real (para que ese consumo tuviera un ~70% "explicado" por los equipos). El modelo entrenado con esos datos terminaba dependiendo casi por completo de una sola variable (`Peak_Hours_Usage_kWh`, con ~97% de la importancia), y clasificaba casi cualquier combinación libre de equipos como "Ineficiente", sin importar qué tan eficiente fuera en realidad.
+**Dataset:** generado de abajo hacia arriba — el consumo total (`Energy_Consumption_kWh`) se calcula a partir de coeficientes de consumo reales por tipo de equipo (refrigerador, microondas, lavadora, pantalla, aire acondicionado, foco), cada uno con su aporte diario típico en kWh. El uso en horario pico (`Peak_Hours_Usage_kWh`) se genera de forma independiente al consumo total, y la probabilidad de tener aire acondicionado aumenta con la temperatura promedio de la zona (reflejando un patrón real de clima). Con esta metodología, la importancia de variables del modelo queda repartida de forma realista (aire acondicionado y refrigeradores como los que más pesan, consistente con la vida real), validado con más de una decena de casos de prueba donde solo cambia el consumo real declarado, manteniendo el mismo equipo — el modelo distingue correctamente entre Eficiente, Moderado e Ineficiente.
 
-**Solución:** se regeneró el dataset de entrenamiento de abajo hacia arriba — el consumo total se calcula a partir de coeficientes de consumo reales por tipo de equipo (refrigerador, microondas, lavadora, pantalla, aire acondicionado, foco), en vez de al revés. Con el modelo reentrenado, la importancia de variables quedó repartida de forma realista (aire acondicionado y refrigeradores como los que más pesan, consistente con la vida real), y validado con más de una decena de casos de prueba donde solo cambia el consumo real declarado, manteniendo el mismo equipo — el modelo distingue correctamente entre Eficiente, Moderado e Ineficiente.
+Métricas del modelo: MAE ≈ 0.83 kWh, RMSE ≈ 1.05 kWh, R² ≈ 0.95 (sobre un conjunto de prueba separado del de entrenamiento).
 
-Métricas del modelo reentrenado: MAE ≈ 0.83 kWh, RMSE ≈ 1.05 kWh, R² ≈ 0.95 (sobre un conjunto de prueba separado del de entrenamiento).
+**Notebook / scripts (carpeta [`model/`](model/)):**
+- `generar_dataset.py` — genera `dataset_consumo.csv` y se sube a OCI Object Storage.
+- `entrenamiento.py` — lee el dataset directo desde OCI, entrena el `RandomForestRegressor`, evalúa (MAE/RMSE/R²), imprime la importancia de variables, y serializa el modelo con `joblib` (`random_forest_consumo.pkl`).
+- `servidor.py` — expone el modelo entrenado como API (`POST /predecir`) con FastAPI, listo para correr en Colab o como servicio persistente.
 
 ## Cómo correrlo en local
 
@@ -188,7 +191,7 @@ Variables de entorno que usa el backend en producción (todas opcionales, con va
 | Variable | Para qué |
 |---|---|
 | `PORT` | Puerto del servidor (lo asigna Railway automáticamente) |
-| `DATA_MODELO_URL` | URL del microservicio del modelo (Colab + ngrok) |
+| `DATA_MODELO_URL` | URL del microservicio del modelo (Colab + ngrok, o el tercer servicio de Railway con `model/`) |
 | `CORS_ALLOWED_ORIGIN` | Origen permitido para CORS (la URL del frontend desplegado) |
 | `COOKIE_SAME_SITE` / `COOKIE_SECURE` | Atributos de la cookie de sesión, necesarios para que funcione entre dominios distintos de Railway |
 
@@ -205,11 +208,16 @@ EnergiAI/
 │       ├── session/     # Historial en memoria por sesión
 │       ├── config/      # CORS
 │       └── exception/   # Manejo centralizado de errores
-└── frontend/            # SPA (Angular)
-    └── src/app/
-        ├── app.ts        # Componente principal (formulario, historial, lotes, simulador)
-        ├── app.html
-        └── app.css
+├── frontend/            # SPA (Angular)
+│   └── src/app/
+│       ├── app.ts        # Componente principal (formulario, historial, lotes, simulador)
+│       ├── app.html
+│       └── app.css
+└── model/               # Modelo de Data (Python)
+    ├── generar_dataset.py  # Genera dataset_consumo.csv (sube a OCI Object Storage)
+    ├── entrenamiento.py    # Entrena leyendo desde OCI, evalúa, serializa el modelo
+    ├── servidor.py          # API del modelo (FastAPI)
+    └── random_forest_consumo.pkl
 ```
 
 ## Pruebas automatizadas
@@ -224,5 +232,5 @@ cd backend
 ## Limitaciones conocidas
 
 - El historial no persiste entre reinicios del backend (vive en memoria, por diseño — ver [Arquitectura](#arquitectura)).
-- El modelo depende de que la sesión de Colab esté activa para dar predicciones reales; si no lo está, el backend usa un clasificador de respaldo basado en reglas (menos preciso, pero la app sigue funcionando).
+- Si el modelo se sirve desde Colab (en vez del servicio persistente en `model/`), depende de que esa sesión esté activa para dar predicciones reales; si no lo está, el backend usa un clasificador de respaldo basado en reglas (menos preciso, pero la app sigue funcionando).
 - El anillo de confianza del resultado en el frontend está fijo en 98% (decisión explícita del equipo para la demo, no representa la probabilidad real del modelo).
