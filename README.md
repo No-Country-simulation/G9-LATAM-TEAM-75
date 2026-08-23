@@ -302,7 +302,7 @@ El modelo (`RandomForestRegressor`) predice el consumo diario esperado de una vi
 | RMSE | ≈ 1.05 kWh |
 | R² | ≈ 0.95 |
 
-**Notebook completo** ([`model/analisis_eda.ipynb`](model/analisis_eda.ipynb)): exploración y limpieza de datos (EDA), análisis de patrones de consumo (correlaciones, distribuciones, relación temperatura/aire acondicionado), transformación de variables, entrenamiento del modelo, evaluación, la lógica de clasificación y recomendaciones basadas en reglas, y la serialización del modelo — todo ejecutado, con las gráficas y salidas ya generadas.
+**Notebook completo** ([`model/analisis_eda.ipynb`](model/analisis_eda.ipynb)): exploración y limpieza de datos (EDA), análisis de patrones de consumo (correlaciones, distribuciones, relación temperatura/aire acondicionado), transformación de variables, entrenamiento del modelo, evaluación, la lógica de clasificación y recomendaciones basadas en reglas, y la serialización del modelo — todo ejecutado, con las gráficas y salidas ya generadas. También disponible en [Google Colab](https://colab.research.google.com/drive/19PO42IJJcCgwAnGrDVDig15iMXns-kyr?usp=sharing).
 
 **Scripts (carpeta [`model/`](model/)):**
 
