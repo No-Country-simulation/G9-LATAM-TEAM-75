@@ -24,16 +24,18 @@ Proyecto para el **Hackathon ONE** (Alura + Oracle) — equipo **G9 LATAM**.
 ## Arquitectura
 
 ```
-┌─────────────┐      HTTPS       ┌──────────────────┐      HTTPS       ┌────────────────────────┐
-│   Angular    │ ───────────────▶│   Spring Boot     │ ───────────────▶│  Modelo (Random Forest)  │
-│  (frontend)  │◀─────────────── │    (backend)      │◀─────────────── │  FastAPI en Colab + ngrok │
-└─────────────┘   JSON + cookie  └──────────────────┘   JSON            └────────────────────────┘
-                                          │
+┌─────────────┐      HTTPS       ┌──────────────────┐      HTTPS       ┌──────────────────────┐
+│   Angular    │ ───────────────▶│   Spring Boot     │ ───────────────▶│ Modelo (Random Forest) │
+│  (frontend)  │◀─────────────── │    (backend)      │◀─────────────── │  FastAPI (servicio en   │
+└─────────────┘   JSON + cookie  └──────────────────┘   JSON            │  Railway, model/)      │
+                                          │                             └──────────────────────┘
                                           ▼
                                   Historial en memoria
                                   (por sesión HTTP,
                                    sin base de datos)
 ```
+
+Los tres (frontend, backend y modelo) están desplegados como servicios independientes en Railway. El modelo también se puede correr en Google Colab + ngrok para pruebas rápidas sin desplegar nada.
 
 - **Frontend (Angular 22, zoneless)**: formulario de análisis, panel de resultado, historial, simulador de ahorro, análisis por lotes (CSV/Excel) y descarga de reportes en Excel.
 - **Backend (Spring Boot 4.1 / Java 21)**: valida la entrada, calcula el costo, arma las recomendaciones, guarda el historial de la sesión, y le pide la clasificación al modelo de Data — si el modelo no responde, cae automáticamente a un clasificador local de respaldo (mock por reglas), así la API nunca se cae por depender de un servicio externo.
@@ -49,7 +51,7 @@ No hay base de datos: el historial de análisis vive en memoria, atado a la cook
 |---|---|
 | Frontend | Angular 22 (standalone, zoneless), TypeScript, ExcelJS |
 | Backend | Java 21, Spring Boot 4.1, Spring Web, Bean Validation, springdoc-openapi (Swagger) |
-| Modelo | Python, scikit-learn (`RandomForestRegressor`), pandas, FastAPI, ngrok, Google Colab |
+| Modelo | Python, scikit-learn (`RandomForestRegressor`), pandas, FastAPI |
 | Almacenamiento del dataset | OCI Object Storage |
 | Despliegue | Railway (backend + frontend), Railpack como builder |
 | Pruebas | JUnit 5 + Mockito (backend) |
@@ -177,21 +179,24 @@ npm start
 ```
 Corre en `http://localhost:4200`.
 
-Por defecto, el frontend en desarrollo apunta a `http://localhost:8080` y el backend solo acepta peticiones desde `http://localhost:4200` (CORS). Si el modelo de Data no está disponible (Colab apagado), el backend cae automáticamente a un clasificador local de respaldo — la app nunca deja de funcionar.
+Por defecto, el frontend en desarrollo apunta a `http://localhost:8080` y el backend solo acepta peticiones desde `http://localhost:4200` (CORS). El backend, por defecto, usa el modelo desplegado en Railway (estable); si ese servicio no está disponible por cualquier razón, cae automáticamente a un clasificador local de respaldo — la app nunca deja de funcionar.
 
 ## Despliegue
 
-Backend y frontend están desplegados en [Railway](https://railway.app):
+Los tres componentes están desplegados en [Railway](https://railway.app), como tres servicios separados dentro del mismo proyecto (cada uno apuntando a su propia carpeta del repo):
 
-- **Backend:** `https://g9-latam-team-75-production.up.railway.app`
 - **Frontend:** `https://scintillating-bravery-production-abf8.up.railway.app`
+- **Backend:** `https://g9-latam-team-75-production.up.railway.app`
+- **Modelo:** `https://profound-courage-production.up.railway.app`
+
+El modelo corre de forma permanente en su propio servicio (a partir de `model/`), así que ya no depende de que una sesión de Colab esté activa.
 
 Variables de entorno que usa el backend en producción (todas opcionales, con valores por defecto para desarrollo local):
 
 | Variable | Para qué |
 |---|---|
 | `PORT` | Puerto del servidor (lo asigna Railway automáticamente) |
-| `DATA_MODELO_URL` | URL del microservicio del modelo (Colab + ngrok, o el tercer servicio de Railway con `model/`) |
+| `DATA_MODELO_URL` | URL del servicio del modelo (`https://profound-courage-production.up.railway.app/predecir`) |
 | `CORS_ALLOWED_ORIGIN` | Origen permitido para CORS (la URL del frontend desplegado) |
 | `COOKIE_SAME_SITE` / `COOKIE_SECURE` | Atributos de la cookie de sesión, necesarios para que funcione entre dominios distintos de Railway |
 
@@ -232,5 +237,5 @@ cd backend
 ## Limitaciones conocidas
 
 - El historial no persiste entre reinicios del backend (vive en memoria, por diseño — ver [Arquitectura](#arquitectura)).
-- Si el modelo se sirve desde Colab (en vez del servicio persistente en `model/`), depende de que esa sesión esté activa para dar predicciones reales; si no lo está, el backend usa un clasificador de respaldo basado en reglas (menos preciso, pero la app sigue funcionando).
+- Si se opta por correr el modelo desde Colab (en vez del servicio persistente en Railway), depende de que esa sesión esté activa para dar predicciones reales; si no lo está, el backend usa un clasificador de respaldo basado en reglas (menos preciso, pero la app sigue funcionando).
 - El anillo de confianza del resultado en el frontend está fijo en 98% (decisión explícita del equipo para la demo, no representa la probabilidad real del modelo).
