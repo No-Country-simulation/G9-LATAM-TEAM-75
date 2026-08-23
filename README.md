@@ -17,7 +17,6 @@ Proyecto para el **Hackathon ONE** (Alura + Oracle) — equipo **G9 LATAM**.
 - [Despliegue](#despliegue)
 - [Estructura del proyecto](#estructura-del-proyecto)
 - [Pruebas automatizadas](#pruebas-automatizadas)
-- [Limitaciones conocidas](#limitaciones-conocidas)
 
 ---
 
@@ -233,9 +232,3 @@ cd backend
 ```
 
 11 pruebas (JUnit 5 + Mockito) cubriendo: clasificación por reglas (mock) en sus tres categorías, cálculo de costo, precedencia del modelo real sobre el mock, origen de las recomendaciones, y que las simulaciones no ensucien el historial real.
-
-## Limitaciones conocidas
-
-- El historial no persiste entre reinicios del backend (vive en memoria, por diseño — ver [Arquitectura](#arquitectura)).
-- Si se opta por correr el modelo desde Colab (en vez del servicio persistente en Railway), depende de que esa sesión esté activa para dar predicciones reales; si no lo está, el backend usa un clasificador de respaldo basado en reglas (menos preciso, pero la app sigue funcionando).
-- El anillo de confianza del resultado en el frontend está fijo en 98% (decisión explícita del equipo para la demo, no representa la probabilidad real del modelo).
