@@ -389,6 +389,37 @@ cd backend
 
 11 pruebas (JUnit 5 + Mockito) cubriendo: clasificación por reglas (mock) en sus tres categorías, cálculo de costo, precedencia del modelo real sobre el mock, origen de las recomendaciones, y que las simulaciones no ensucien el historial real.
 
+## ▶️ Guía rápida: levantar todo en local
+
+**Requisitos previos:** Java 21, Node.js 18+ (con npm), y conexión a internet (el backend consulta el modelo desplegado en Railway por defecto).
+
+1. **Clona el repo y abre dos terminales** — una para el backend y otra para el frontend.
+
+2. **Terminal 1 — Backend:**
+   ```bash
+   cd backend
+   ./mvnw spring-boot:run
+   ```
+   Espera a que aparezca `Started EnergiaiApplication` en la consola. Queda corriendo en `http://localhost:8080`.
+
+3. **Terminal 2 — Frontend:**
+   ```bash
+   cd frontend
+   npm install
+   npm start
+   ```
+   Queda corriendo en `http://localhost:4200`.
+
+4. **Abre el navegador en `http://localhost:4200`.** El frontend ya viene configurado para hablar con el backend en `localhost:8080`, y el backend acepta peticiones desde `localhost:4200` — no hay que tocar nada más.
+
+5. **Usa la app:**
+   - Llena el formulario con un perfil de consumo (kWh del mes, equipos, tamaño del hogar, temperatura) y dale **Analizar** para ver la categoría, el costo estimado y las recomendaciones.
+   - O sube un Excel/CSV con varios recibos desde la sección de **carga por lotes** (puedes descargar la plantilla vacía desde ahí mismo).
+   - Cada análisis que hagas se guarda en el **historial** de tu sesión (mientras no cierres el navegador ni borres las cookies), con gráfico por mes, comparación contra tu análisis anterior, y ranking de eficiencia.
+   - Prueba el **simulador de ahorro** para ver cuánto bajaría tu costo si reduces uso en horario pico o cambias cuántos aires acondicionados usas.
+
+> Si cierras cualquiera de las dos terminales, la app deja de responder de ese lado — ambas deben quedar corriendo al mismo tiempo mientras la uses.
+
 ---
 
 <div align="center">
