@@ -107,35 +107,27 @@ public class AnalisisRequest {
     @JsonProperty("temperatura_promedio")
     private Double temperaturaPromedio;
 
-    /**
-     * Cantidad de refrigeradores en la vivienda. El rango 0-5 coincide con
-     * el que usó Data para simular su dataset de entrenamiento
-     * ({@code np.random.randint(0, 6)}).
-     */
+    /** Cantidad de refrigeradores en la vivienda. */
     @NotNull(message = "es obligatorio")
     @Min(value = 0, message = "no puede ser negativo")
-    @Max(value = 5, message = "no puede ser mayor a 5")
     @JsonProperty("refrigeradores")
     private Integer cantidadRefrigeradores;
 
     /** Cantidad de microondas en la vivienda. */
     @NotNull(message = "es obligatorio")
     @Min(value = 0, message = "no puede ser negativo")
-    @Max(value = 5, message = "no puede ser mayor a 5")
     @JsonProperty("microondas")
     private Integer cantidadMicroondas;
 
     /** Cantidad de lavadoras en la vivienda. */
     @NotNull(message = "es obligatorio")
     @Min(value = 0, message = "no puede ser negativo")
-    @Max(value = 5, message = "no puede ser mayor a 5")
     @JsonProperty("lavadoras")
     private Integer cantidadLavadoras;
 
     /** Cantidad de pantallas/televisores en la vivienda. */
     @NotNull(message = "es obligatorio")
     @Min(value = 0, message = "no puede ser negativo")
-    @Max(value = 5, message = "no puede ser mayor a 5")
     @JsonProperty("pantallas")
     private Integer cantidadPantallas;
 
@@ -145,14 +137,12 @@ public class AnalisisRequest {
      */
     @NotNull(message = "es obligatorio")
     @Min(value = 0, message = "no puede ser negativo")
-    @Max(value = 5, message = "no puede ser mayor a 5")
     @JsonProperty("aire_acondicionado")
     private Integer cantidadAireAcondicionado;
 
     /** Cantidad de focos/lámparas en la vivienda. */
     @NotNull(message = "es obligatorio")
     @Min(value = 0, message = "no puede ser negativo")
-    @Max(value = 20, message = "no puede ser mayor a 20")
     @JsonProperty("focos")
     private Integer cantidadFocos;
 
