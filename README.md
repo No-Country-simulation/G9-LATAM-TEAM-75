@@ -340,7 +340,7 @@ Los tres componentes están desplegados en [Railway](https://railway.app), como 
 
 | Servicio | URL |
 |---|---|
-| 🖥️ Frontend | `https://scintillating-bravery-production-abf8.up.railway.app` |
+| 🖥️ Frontend | `https://vigilant-manifestation-production-4381.up.railway.app` |
 | ⚙️ Backend | `https://g9-latam-team-75-production.up.railway.app` |
 | 🧠 Modelo | `https://profound-courage-production.up.railway.app` |
 
