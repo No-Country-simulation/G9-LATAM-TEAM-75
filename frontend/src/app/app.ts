@@ -102,18 +102,18 @@ export class App implements OnInit {
   tamanoHogar: number | null = null;
   /** Temperatura promedio de la zona, en °C. */
   temperaturaPromedio: number | null = null;
-  /** Cantidad de refrigeradores en la vivienda. */
-  cantidadRefrigeradores: number | null = null;
-  /** Cantidad de microondas en la vivienda. */
-  cantidadMicroondas: number | null = null;
-  /** Cantidad de lavadoras en la vivienda. */
-  cantidadLavadoras: number | null = null;
-  /** Cantidad de pantallas/televisores en la vivienda. */
-  cantidadPantallas: number | null = null;
-  /** Cantidad de equipos de aire acondicionado en la vivienda (0 = no tiene). */
-  cantidadAireAcondicionado: number | null = null;
-  /** Cantidad de focos/lámparas en la vivienda. */
-  cantidadFocos: number | null = null;
+  /** Cantidad de refrigeradores en la vivienda. Arranca en 0 (no tiene). */
+  cantidadRefrigeradores: number = 0;
+  /** Cantidad de microondas en la vivienda. Arranca en 0 (no tiene). */
+  cantidadMicroondas: number = 0;
+  /** Cantidad de lavadoras en la vivienda. Arranca en 0 (no tiene). */
+  cantidadLavadoras: number = 0;
+  /** Cantidad de pantallas/televisores en la vivienda. Arranca en 0 (no tiene). */
+  cantidadPantallas: number = 0;
+  /** Cantidad de equipos de aire acondicionado en la vivienda. Arranca en 0 (no tiene). */
+  cantidadAireAcondicionado: number = 0;
+  /** Cantidad de focos/lámparas en la vivienda. Arranca en 0 (no tiene). */
+  cantidadFocos: number = 0;
   /** Mes al que corresponde este recibo (ej. "Enero"), opcional. */
   mes: string | null = null;
   /** Año al que corresponde este recibo, opcional. Arranca en el año actual. */
